@@ -18,4 +18,5 @@ import tech.pegasys.teku.infrastructure.bytes.Bytes4;
 public record ClientVersion(String code, String name, String version, Bytes4 commit) {
 
   public static final String TEKU_CLIENT_CODE = "TK";
+  public static final String UNKNOWN_CLIENT_CODE = "NA";
 }

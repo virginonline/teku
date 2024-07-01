@@ -23,7 +23,6 @@ import tech.pegasys.teku.infrastructure.ssz.containers.Container2;
 import tech.pegasys.teku.infrastructure.ssz.containers.ContainerSchema2;
 import tech.pegasys.teku.infrastructure.ssz.tree.TreeNode;
 import tech.pegasys.teku.infrastructure.unsigned.UInt64;
-import tech.pegasys.teku.spec.datastructures.operations.IndexedAttestation.IndexedAttestationSchema;
 
 public class AttesterSlashing
     extends Container2<AttesterSlashing, IndexedAttestation, IndexedAttestation> {
@@ -31,7 +30,8 @@ public class AttesterSlashing
   public static class AttesterSlashingSchema
       extends ContainerSchema2<AttesterSlashing, IndexedAttestation, IndexedAttestation> {
 
-    public AttesterSlashingSchema(final IndexedAttestationSchema indexedAttestationSchema) {
+    public AttesterSlashingSchema(
+        final IndexedAttestation.IndexedAttestationSchema indexedAttestationSchema) {
       super(
           "AttesterSlashing",
           namedSchema("attestation_1", indexedAttestationSchema),
@@ -39,7 +39,7 @@ public class AttesterSlashing
     }
 
     @Override
-    public AttesterSlashing createFromBackingNode(TreeNode node) {
+    public AttesterSlashing createFromBackingNode(final TreeNode node) {
       return new AttesterSlashing(this, node);
     }
 
@@ -59,7 +59,7 @@ public class AttesterSlashing
                           .asListUnboxed()), // TreeSet as must be sorted
                   new HashSet<>(getAttestation2().getAttestingIndices().asListUnboxed())));
 
-  private AttesterSlashing(AttesterSlashingSchema type, TreeNode backingNode) {
+  private AttesterSlashing(final AttesterSlashingSchema type, final TreeNode backingNode) {
     super(type, backingNode);
   }
 

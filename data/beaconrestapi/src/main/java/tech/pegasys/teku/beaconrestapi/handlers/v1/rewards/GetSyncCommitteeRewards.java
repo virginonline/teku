@@ -75,7 +75,7 @@ public class GetSyncCommitteeRewards extends RestApiEndpoint {
     super(
         EndpointMetadata.post(ROUTE)
             .operationId("getSyncCommitteeRewards")
-            .summary("Get Sync Committee Rewards")
+            .summary("Get sync committee rewards")
             .description(
                 "Retrieves rewards info for sync committee members specified by array of public keys "
                     + "or validator index. If no array is provided, return reward info for every committee member.")
@@ -91,7 +91,7 @@ public class GetSyncCommitteeRewards extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     // Validator identifier might be the validator's public key or index. If empty we query all
     // validators.
     final Optional<List<String>> maybeList = request.getOptionalRequestBody();

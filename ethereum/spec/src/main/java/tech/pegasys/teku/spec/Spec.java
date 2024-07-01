@@ -20,6 +20,7 @@ import static tech.pegasys.teku.spec.SpecMilestone.DENEB;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +43,6 @@ import tech.pegasys.teku.infrastructure.async.SafeFuture;
 import tech.pegasys.teku.infrastructure.bytes.Bytes4;
 import tech.pegasys.teku.infrastructure.ssz.Merkleizable;
 import tech.pegasys.teku.infrastructure.ssz.SszList;
-import tech.pegasys.teku.infrastructure.ssz.collections.SszBitlist;
 import tech.pegasys.teku.infrastructure.unsigned.UInt64;
 import tech.pegasys.teku.spec.cache.IndexedAttestationCache;
 import tech.pegasys.teku.spec.config.NetworkingSpecConfig;
@@ -107,7 +107,8 @@ public class Spec {
   private final ForkSchedule forkSchedule;
   private final StateTransition stateTransition;
 
-  private Spec(Map<SpecMilestone, SpecVersion> specVersions, final ForkSchedule forkSchedule) {
+  private Spec(
+      final Map<SpecMilestone, SpecVersion> specVersions, final ForkSchedule forkSchedule) {
     Preconditions.checkArgument(specVersions != null && specVersions.size() > 0);
     Preconditions.checkArgument(forkSchedule != null);
     this.specVersions = specVersions;
@@ -293,10 +294,10 @@ public class Spec {
 
   // Genesis
   public BeaconState initializeBeaconStateFromEth1(
-      Bytes32 eth1BlockHash,
-      UInt64 eth1Timestamp,
-      List<? extends Deposit> deposits,
-      Optional<ExecutionPayloadHeader> payloadHeader) {
+      final Bytes32 eth1BlockHash,
+      final UInt64 eth1Timestamp,
+      final List<Deposit> deposits,
+      final Optional<ExecutionPayloadHeader> payloadHeader) {
     final GenesisGenerator genesisGenerator = createGenesisGenerator();
     genesisGenerator.updateCandidateState(eth1BlockHash, eth1Timestamp, deposits);
     payloadHeader.ifPresent(genesisGenerator::updateExecutionPayloadHeader);
@@ -416,7 +417,7 @@ public class Spec {
     return atState(state).beaconStateAccessors().getPreviousEpoch(state);
   }
 
-  public Bytes32 getSeed(BeaconState state, UInt64 epoch, Bytes4 domainType)
+  public Bytes32 getSeed(final BeaconState state, final UInt64 epoch, final Bytes4 domainType)
       throws IllegalArgumentException {
     return atState(state).beaconStateAccessors().getSeed(state, epoch, domainType);
   }
@@ -429,35 +430,36 @@ public class Spec {
     return atSlot(slot).miscHelpers().computeEpochAtSlot(slot);
   }
 
-  public UInt64 computeTimeAtSlot(BeaconState state, UInt64 slot) {
+  public UInt64 computeTimeAtSlot(final BeaconState state, final UInt64 slot) {
     return atSlot(slot).miscHelpers().computeTimeAtSlot(state.getGenesisTime(), slot);
   }
 
-  public Bytes computeSigningRoot(BeaconBlock block, Bytes32 domain) {
+  public Bytes computeSigningRoot(final BeaconBlock block, final Bytes32 domain) {
     return atBlock(block).miscHelpers().computeSigningRoot(block, domain);
   }
 
-  public Bytes computeSigningRoot(BeaconBlockHeader blockHeader, Bytes32 domain) {
+  public Bytes computeSigningRoot(final BeaconBlockHeader blockHeader, final Bytes32 domain) {
     return atSlot(blockHeader.getSlot()).miscHelpers().computeSigningRoot(blockHeader, domain);
   }
 
-  public Bytes computeSigningRoot(AggregateAndProof proof, Bytes32 domain) {
+  public Bytes computeSigningRoot(final AggregateAndProof proof, final Bytes32 domain) {
     return atSlot(proof.getAggregate().getData().getSlot())
         .miscHelpers()
         .computeSigningRoot(proof, domain);
   }
 
-  public Bytes computeSigningRoot(UInt64 slot, Bytes32 domain) {
+  public Bytes computeSigningRoot(final UInt64 slot, final Bytes32 domain) {
     return atSlot(slot).miscHelpers().computeSigningRoot(slot, domain);
   }
 
-  public Bytes computeBuilderApplicationSigningRoot(UInt64 slot, Merkleizable object) {
+  public Bytes computeBuilderApplicationSigningRoot(final UInt64 slot, final Merkleizable object) {
     final MiscHelpers miscHelpers = atSlot(slot).miscHelpers();
     return miscHelpers.computeSigningRoot(
         object, miscHelpers.computeDomain(Domain.APPLICATION_BUILDER));
   }
 
-  public Bytes4 computeForkDigest(Bytes4 currentVersion, Bytes32 genesisValidatorsRoot) {
+  public Bytes4 computeForkDigest(
+      final Bytes4 currentVersion, final Bytes32 genesisValidatorsRoot) {
     return atForkVersion(currentVersion)
         .miscHelpers()
         .computeForkDigest(currentVersion, genesisValidatorsRoot);
@@ -501,9 +503,9 @@ public class Spec {
   }
 
   public boolean verifyProposerSlashingSignature(
-      BeaconState state,
-      ProposerSlashing proposerSlashing,
-      BLSSignatureVerifier signatureVerifier) {
+      final BeaconState state,
+      final ProposerSlashing proposerSlashing,
+      final BLSSignatureVerifier signatureVerifier) {
     final UInt64 epoch = getProposerSlashingEpoch(proposerSlashing);
     return atEpoch(epoch)
         .operationSignatureVerifier()
@@ -512,18 +514,20 @@ public class Spec {
   }
 
   public boolean verifyVoluntaryExitSignature(
-      BeaconState state, SignedVoluntaryExit signedExit, BLSSignatureVerifier signatureVerifier) {
+      final BeaconState state,
+      final SignedVoluntaryExit signedExit,
+      final BLSSignatureVerifier signatureVerifier) {
     final UInt64 epoch = signedExit.getMessage().getEpoch();
     return atEpoch(epoch)
         .operationSignatureVerifier()
         .verifyVoluntaryExitSignature(state, signedExit, signatureVerifier);
   }
 
-  public Bytes32 getPreviousDutyDependentRoot(BeaconState state) {
+  public Bytes32 getPreviousDutyDependentRoot(final BeaconState state) {
     return atState(state).getBeaconStateUtil().getPreviousDutyDependentRoot(state);
   }
 
-  public Bytes32 getCurrentDutyDependentRoot(BeaconState state) {
+  public Bytes32 getCurrentDutyDependentRoot(final BeaconState state) {
     return atState(state).getBeaconStateUtil().getCurrentDutyDependentRoot(state);
   }
 
@@ -549,19 +553,20 @@ public class Spec {
   }
 
   // ForkChoice utils
-  public UInt64 getCurrentSlot(UInt64 currentTime, UInt64 genesisTime) {
+  public UInt64 getCurrentSlot(final UInt64 currentTime, final UInt64 genesisTime) {
     return atTime(genesisTime, currentTime)
         .getForkChoiceUtil()
         .getCurrentSlot(currentTime, genesisTime);
   }
 
-  public UInt64 getCurrentSlotForMillis(UInt64 currentTimeMillis, UInt64 genesisTimeMillis) {
+  public UInt64 getCurrentSlotForMillis(
+      final UInt64 currentTimeMillis, final UInt64 genesisTimeMillis) {
     return atTimeMillis(genesisTimeMillis, currentTimeMillis)
         .getForkChoiceUtil()
         .getCurrentSlotForMillis(currentTimeMillis, genesisTimeMillis);
   }
 
-  public UInt64 getCurrentSlot(ReadOnlyStore store) {
+  public UInt64 getCurrentSlot(final ReadOnlyStore store) {
     return atTime(store.getGenesisTime(), store.getTimeSeconds())
         .getForkChoiceUtil()
         .getCurrentSlot(store);
@@ -571,36 +576,38 @@ public class Spec {
     return computeEpochAtSlot(getCurrentSlot(store));
   }
 
-  public UInt64 getSlotStartTime(UInt64 slotNumber, UInt64 genesisTime) {
+  public UInt64 getSlotStartTime(final UInt64 slotNumber, final UInt64 genesisTime) {
     return atSlot(slotNumber).getForkChoiceUtil().getSlotStartTime(slotNumber, genesisTime);
   }
 
-  public UInt64 getSlotStartTimeMillis(UInt64 slotNumber, UInt64 genesisTimeMillis) {
+  public UInt64 getSlotStartTimeMillis(final UInt64 slotNumber, final UInt64 genesisTimeMillis) {
     return atSlot(slotNumber)
         .getForkChoiceUtil()
         .getSlotStartTimeMillis(slotNumber, genesisTimeMillis);
   }
 
   public Optional<Bytes32> getAncestor(
-      ReadOnlyForkChoiceStrategy forkChoiceStrategy, Bytes32 root, UInt64 slot) {
+      final ReadOnlyForkChoiceStrategy forkChoiceStrategy, final Bytes32 root, final UInt64 slot) {
     return forGetAncestor(forkChoiceStrategy, root, slot)
         .getForkChoiceUtil()
         .getAncestor(forkChoiceStrategy, root, slot);
   }
 
   public NavigableMap<UInt64, Bytes32> getAncestors(
-      ReadOnlyForkChoiceStrategy forkChoiceStrategy,
-      Bytes32 root,
-      UInt64 startSlot,
-      UInt64 step,
-      UInt64 count) {
+      final ReadOnlyForkChoiceStrategy forkChoiceStrategy,
+      final Bytes32 root,
+      final UInt64 startSlot,
+      final UInt64 step,
+      final UInt64 count) {
     return forGetAncestor(forkChoiceStrategy, root, startSlot)
         .getForkChoiceUtil()
         .getAncestors(forkChoiceStrategy, root, startSlot, step, count);
   }
 
   public NavigableMap<UInt64, Bytes32> getAncestorsOnFork(
-      ReadOnlyForkChoiceStrategy forkChoiceStrategy, Bytes32 root, UInt64 startSlot) {
+      final ReadOnlyForkChoiceStrategy forkChoiceStrategy,
+      final Bytes32 root,
+      final UInt64 startSlot) {
     return forGetAncestor(forkChoiceStrategy, root, startSlot)
         .getForkChoiceUtil()
         .getAncestorsOnFork(forkChoiceStrategy, root, startSlot);
@@ -688,7 +695,7 @@ public class Spec {
             blockSlot, blockParentRoot, store, forkChoiceStrategy);
   }
 
-  public BeaconState processSlots(BeaconState preState, UInt64 slot)
+  public BeaconState processSlots(final BeaconState preState, final UInt64 slot)
       throws SlotProcessingException, EpochProcessingException {
     return stateTransition.processSlots(preState, slot);
   }
@@ -749,7 +756,11 @@ public class Spec {
   }
 
   public Optional<List<Withdrawal>> getExpectedWithdrawals(final BeaconState state) {
-    return atState(state).getBlockProcessor().getExpectedWithdrawals(state);
+    if (!atState(state).getMilestone().isGreaterThanOrEqualTo(SpecMilestone.CAPELLA)) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        atState(state).getBlockProcessor().getExpectedWithdrawals(state).getWithdrawalList());
   }
 
   // Block Processor Utils
@@ -810,7 +821,7 @@ public class Spec {
   }
 
   public boolean isEnoughVotesToUpdateEth1Data(
-      BeaconState state, Eth1Data eth1Data, final int additionalVotes) {
+      final BeaconState state, final Eth1Data eth1Data, final int additionalVotes) {
     final BlockProcessor blockProcessor = atState(state).getBlockProcessor();
     final long existingVotes = blockProcessor.getVoteCount(state, eth1Data);
     return blockProcessor.isEnoughVotesToUpdateEth1Data(existingVotes + additionalVotes);
@@ -824,11 +835,11 @@ public class Spec {
     return atEpoch(epoch).beaconStateAccessors().getActiveValidatorIndices(state, epoch);
   }
 
-  public UInt64 getTotalActiveBalance(BeaconState state) {
+  public UInt64 getTotalActiveBalance(final BeaconState state) {
     return atState(state).beaconStateAccessors().getTotalActiveBalance(state);
   }
 
-  public UInt64 getProposerBoostAmount(BeaconState state) {
+  public UInt64 getProposerBoostAmount(final BeaconState state) {
     return atState(state).beaconStateAccessors().getProposerBoostAmount(state);
   }
 
@@ -836,8 +847,13 @@ public class Spec {
     return atState(state).beaconStateAccessors().getPreviousEpochAttestationCapacity(state);
   }
 
-  public IntList getBeaconCommittee(BeaconState state, UInt64 slot, UInt64 index) {
+  public IntList getBeaconCommittee(
+      final BeaconState state, final UInt64 slot, final UInt64 index) {
     return atState(state).beaconStateAccessors().getBeaconCommittee(state, slot, index);
+  }
+
+  public Int2IntMap getBeaconCommitteesSize(final BeaconState state, final UInt64 slot) {
+    return atState(state).beaconStateAccessors().getBeaconCommitteesSize(state, slot);
   }
 
   public Optional<BLSPublicKey> getValidatorPubKey(
@@ -856,7 +872,7 @@ public class Spec {
   }
 
   public Optional<CommitteeAssignment> getCommitteeAssignment(
-      BeaconState state, UInt64 epoch, int validatorIndex) {
+      final BeaconState state, final UInt64 epoch, final int validatorIndex) {
     return atEpoch(epoch).getValidatorsUtil().getCommitteeAssignment(state, epoch, validatorIndex);
   }
 
@@ -868,8 +884,10 @@ public class Spec {
   }
 
   // Attestation helpers
-  public IntList getAttestingIndices(BeaconState state, AttestationData data, SszBitlist bits) {
-    return atState(state).getAttestationUtil().getAttestingIndices(state, data, bits);
+  public IntList getAttestingIndices(final BeaconState state, final Attestation attestation) {
+    return atSlot(attestation.getData().getSlot())
+        .getAttestationUtil()
+        .getAttestingIndices(state, attestation);
   }
 
   public AttestationData getGenericAttestationData(
@@ -883,9 +901,9 @@ public class Spec {
   }
 
   public SafeFuture<AttestationProcessingResult> isValidIndexedAttestation(
-      BeaconState state,
-      ValidatableAttestation attestation,
-      AsyncBLSSignatureVerifier blsSignatureVerifier) {
+      final BeaconState state,
+      final ValidatableAttestation attestation,
+      final AsyncBLSSignatureVerifier blsSignatureVerifier) {
     final UInt64 slot = attestation.getData().getSlot();
     return atSlot(slot)
         .getAttestationUtil()
@@ -933,6 +951,11 @@ public class Spec {
     return getSpecConfigDeneb()
         .map(SpecConfigDeneb::getDenebForkEpoch)
         .map(this::computeStartSlotAtEpoch);
+  }
+
+  // Electra Utils
+  public boolean isFormerDepositMechanismDisabled(final BeaconState state) {
+    return atState(state).miscHelpers().isFormerDepositMechanismDisabled(state);
   }
 
   // Deneb private helpers

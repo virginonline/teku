@@ -322,7 +322,7 @@ public class TekuNodeConfigBuilder {
   }
 
   public TekuNodeConfigBuilder withWritableKeystorePath(
-      ValidatorKeystores keystores, Path tempDir) {
+      final ValidatorKeystores keystores, final Path tempDir) {
     LOG.debug("Xinterop-enabled=false");
     configMap.put("Xinterop-enabled", false);
     final String keysFolder = "/" + keystores.getKeysDirectoryName();
@@ -513,14 +513,20 @@ public class TekuNodeConfigBuilder {
     return this;
   }
 
-  public TekuNodeConfigBuilder withGenesisTime(int time) {
+  public TekuNodeConfigBuilder withGenesisTime(final int time) {
     mustBe(NodeType.BEACON_NODE);
     LOG.debug("Xinterop-genesis-time={}", time);
     configMap.put("Xinterop-genesis-time", time);
     return this;
   }
 
-  private TekuNodeConfigBuilder withPrivateKey(PrivKey privKey) throws IOException {
+  public TekuNodeConfigBuilder withGraffiti(final String graffiti) {
+    LOG.debug("validators-graffiti: {}", graffiti);
+    configMap.put("validators-graffiti", graffiti);
+    return this;
+  }
+
+  private TekuNodeConfigBuilder withPrivateKey(final PrivKey privKey) throws IOException {
     mustBe(NodeType.BEACON_NODE);
     this.maybePrivKey = Optional.ofNullable(privKey);
     this.maybePeerId = maybePrivKey.map(privateKey -> PeerId.fromPubKey(privateKey.publicKey()));

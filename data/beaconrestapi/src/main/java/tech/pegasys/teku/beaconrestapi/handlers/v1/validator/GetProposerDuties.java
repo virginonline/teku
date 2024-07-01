@@ -50,7 +50,7 @@ public class GetProposerDuties extends RestApiEndpoint {
     super(
         EndpointMetadata.get(ROUTE)
             .operationId("getProposerDuties")
-            .summary("Get proposer duties")
+            .summary("Get block proposers duties")
             .description(
                 "Request beacon node to provide all validators that are scheduled to propose a block in the given epoch.\n\n"
                     + "Duties should only need to be checked once per epoch, "
@@ -71,7 +71,7 @@ public class GetProposerDuties extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     if (!validatorDataProvider.isStoreAvailable() || syncDataProvider.isSyncing()) {
       request.respondError(SC_SERVICE_UNAVAILABLE, SERVICE_UNAVAILABLE);
       return;

@@ -17,6 +17,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static tech.pegasys.teku.infrastructure.logging.P2PLogger.P2P_LOG;
 import static tech.pegasys.teku.infrastructure.time.TimeUtilities.secondsToMillis;
 import static tech.pegasys.teku.spec.constants.NetworkConstants.INTERVALS_PER_SLOT;
+import static tech.pegasys.teku.spec.logic.versions.deneb.blobs.BlobSidecarsValidationResult.INVALID;
 import static tech.pegasys.teku.statetransition.forkchoice.StateRootCollector.addParentStateRoots;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -74,6 +75,7 @@ import tech.pegasys.teku.spec.logic.versions.deneb.blobs.BlobSidecarsAvailabilit
 import tech.pegasys.teku.statetransition.attestation.DeferredAttestations;
 import tech.pegasys.teku.statetransition.blobs.BlobSidecarManager;
 import tech.pegasys.teku.statetransition.block.BlockImportPerformance;
+import tech.pegasys.teku.statetransition.util.DebugDataDumper;
 import tech.pegasys.teku.statetransition.validation.AttestationStateSelector;
 import tech.pegasys.teku.statetransition.validation.BlockBroadcastValidator;
 import tech.pegasys.teku.statetransition.validation.InternalValidationResult;
@@ -108,6 +110,8 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
 
   private final LabelledMetric<Counter> getProposerHeadSelectedCounter;
 
+  private final DebugDataDumper debugDataDumper;
+
   public ForkChoice(
       final Spec spec,
       final EventThread forkChoiceExecutor,
@@ -118,6 +122,7 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
       final TickProcessor tickProcessor,
       final MergeTransitionBlockValidator transitionBlockValidator,
       final boolean forkChoiceLateBlockReorgEnabled,
+      final DebugDataDumper debugDataDumper,
       final MetricsSystem metricsSystem) {
     this.spec = spec;
     this.forkChoiceExecutor = forkChoiceExecutor;
@@ -132,6 +137,7 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
     this.forkChoiceLateBlockReorgEnabled = forkChoiceLateBlockReorgEnabled;
     this.lastProcessHeadSlot.set(UInt64.ZERO);
     LOG.debug("forkChoiceLateBlockReorgEnabled is set to {}", forkChoiceLateBlockReorgEnabled);
+    this.debugDataDumper = debugDataDumper;
     getProposerHeadSelectedCounter =
         metricsSystem.createLabelledCounter(
             TekuMetricCategory.BEACON,
@@ -161,6 +167,7 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
         new TickProcessor(spec, recentChainData),
         transitionBlockValidator,
         false,
+        DebugDataDumper.NOOP,
         metricsSystem);
   }
 
@@ -275,8 +282,8 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
 
   public void onAttesterSlashing(
       final AttesterSlashing slashing,
-      InternalValidationResult validationStatus,
-      boolean fromNetwork) {
+      final InternalValidationResult validationStatus,
+      final boolean fromNetwork) {
     if (!validationStatus.isAccept()) {
       return;
     }
@@ -289,7 +296,7 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
         .ifExceptionGetsHereRaiseABug();
   }
 
-  public void subscribeToOptimisticHeadChangesAndUpdate(OptimisticHeadSubscriber subscriber) {
+  public void subscribeToOptimisticHeadChangesAndUpdate(final OptimisticHeadSubscriber subscriber) {
     optimisticSyncSubscribers.subscribe(subscriber);
     getOptimisticSyncing().ifPresent(subscriber::onOptimisticHeadChanged);
   }
@@ -534,21 +541,20 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
           payloadResult.getFailureCause().orElseThrow());
     }
 
+    LOG.debug("blobSidecars validation result: {}", blobSidecarsAndValidationResult::toLogString);
+
     switch (blobSidecarsAndValidationResult.getValidationResult()) {
-      case VALID, NOT_REQUIRED -> LOG.debug(
-          "blobSidecars validation result: {}", blobSidecarsAndValidationResult::toLogString);
       case NOT_AVAILABLE -> {
-        LOG.warn(
-            "blobSidecars validation result: {}", blobSidecarsAndValidationResult::toLogString);
         return BlockImportResult.failedDataAvailabilityCheckNotAvailable(
             blobSidecarsAndValidationResult.getCause());
       }
       case INVALID -> {
-        LOG.error(
-            "blobSidecars validation result: {}", blobSidecarsAndValidationResult::toLogString);
+        debugDataDumper.saveInvalidBlobSidecars(
+            blobSidecarsAndValidationResult.getBlobSidecars(), block);
         return BlockImportResult.failedDataAvailabilityCheckInvalid(
             blobSidecarsAndValidationResult.getCause());
       }
+      default -> {}
     }
 
     final ForkChoiceStrategy forkChoiceStrategy = getForkChoiceStrategy();
@@ -675,7 +681,7 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
             earliestAvailabilityWindowSlotBeforeBlock.max(earliestAffectedSlot));
   }
 
-  private UInt64 getMillisIntoSlot(StoreTransaction transaction, UInt64 millisPerSlot) {
+  private UInt64 getMillisIntoSlot(final StoreTransaction transaction, final UInt64 millisPerSlot) {
     return transaction
         .getTimeInMillis()
         .minus(secondsToMillis(transaction.getGenesisTime()))
@@ -753,6 +759,8 @@ public class ForkChoice implements ForkChoiceUpdatedResultSubscriber {
     if (result.getFailureReason() == FailureReason.BLOCK_IS_FROM_FUTURE) {
       return;
     }
+    debugDataDumper.saveInvalidBlock(
+        block, result.getFailureReason().name(), result.getFailureCause());
     P2P_LOG.onInvalidBlock(
         block.getSlot(),
         block.getRoot(),

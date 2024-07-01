@@ -52,7 +52,7 @@ public class PostBlsToExecutionChanges extends RestApiEndpoint {
 
   private static EndpointMetadata createEndpointMetadata(final SchemaDefinitionCache schemaCache) {
     return EndpointMetadata.post(ROUTE)
-        .operationId("postBlsToExecutionChange")
+        .operationId("submitPoolBLSToExecutionChange")
         .summary("Submit SignedBLSToExecutionChange object to node's pool")
         .description(
             "Submits SignedBLSToExecutionChange object to node's pool and if passes validation node MUST broadcast it"
@@ -75,7 +75,7 @@ public class PostBlsToExecutionChanges extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final List<SignedBlsToExecutionChange> blsToExecutionChanges = request.getRequestBody();
     if (blsToExecutionChanges.size() > MAX_BLS_MESSAGES_PER_REQUEST) {
       final String errorMessage =

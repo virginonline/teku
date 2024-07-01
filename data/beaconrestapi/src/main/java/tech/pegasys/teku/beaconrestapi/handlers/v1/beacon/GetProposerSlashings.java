@@ -50,8 +50,8 @@ public class GetProposerSlashings extends RestApiEndpoint {
   GetProposerSlashings(final NodeDataProvider provider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getProposerSlashings")
-            .summary("Get proposer slashings")
+            .operationId("getPoolProposerSlashings")
+            .summary("Get ProposerSlashings from operations pool")
             .description(
                 "Retrieves proposer slashings known by the node but not necessarily incorporated into any block.")
             .tags(TAG_BEACON)
@@ -61,7 +61,7 @@ public class GetProposerSlashings extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     request.header(Header.CACHE_CONTROL, CACHE_NONE);
     List<ProposerSlashing> proposerSlashings = nodeDataProvider.getProposerSlashings();
     request.respondOk(proposerSlashings);

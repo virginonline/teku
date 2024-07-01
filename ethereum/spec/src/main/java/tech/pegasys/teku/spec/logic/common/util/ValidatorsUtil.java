@@ -30,6 +30,7 @@ import tech.pegasys.teku.spec.datastructures.state.CommitteeAssignment;
 import tech.pegasys.teku.spec.datastructures.state.Validator;
 import tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState;
 import tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconStateCache;
+import tech.pegasys.teku.spec.datastructures.state.versions.electra.PendingPartialWithdrawal;
 import tech.pegasys.teku.spec.logic.common.helpers.BeaconStateAccessors;
 import tech.pegasys.teku.spec.logic.common.helpers.MiscHelpers;
 
@@ -52,7 +53,8 @@ public class ValidatorsUtil {
         && validator.getActivationEpoch().equals(SpecConfig.FAR_FUTURE_EPOCH);
   }
 
-  public Optional<Integer> getValidatorIndex(BeaconState state, BLSPublicKey publicKey) {
+  public Optional<Integer> getValidatorIndex(
+      final BeaconState state, final BLSPublicKey publicKey) {
     return BeaconStateCache.getTransitionCaches(state)
         .getValidatorIndexCache()
         .getValidatorIndex(state, publicKey);
@@ -159,5 +161,13 @@ public class ValidatorsUtil {
 
   public int getAggregatorModulo(final int committeeSize) {
     return Math.max(1, committeeSize / ValidatorConstants.TARGET_AGGREGATORS_PER_COMMITTEE);
+  }
+
+  public UInt64 getPendingBalanceToWithdraw(final BeaconState state, final int validatorIndex) {
+    return state.toVersionElectra().orElseThrow().getPendingPartialWithdrawals().stream()
+        .filter(withdrawal -> withdrawal.getIndex() == validatorIndex)
+        .map(PendingPartialWithdrawal::getAmount)
+        .reduce(UInt64::plus)
+        .orElse(UInt64.ZERO);
   }
 }

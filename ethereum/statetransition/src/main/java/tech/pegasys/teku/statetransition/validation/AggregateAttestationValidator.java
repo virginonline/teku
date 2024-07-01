@@ -142,9 +142,7 @@ public class AggregateAttestationValidator {
               final BeaconState state = maybeState.get();
 
               // [REJECT] The aggregate attestation has participants
-              final IntList attestingIndices =
-                  spec.getAttestingIndices(
-                      state, aggregate.getData(), aggregate.getAggregationBits());
+              final IntList attestingIndices = spec.getAttestingIndices(state, aggregate);
               if (attestingIndices.isEmpty()) {
                 return SafeFuture.completedFuture(
                     reject(
@@ -168,7 +166,7 @@ public class AggregateAttestationValidator {
               }
 
               final IntList beaconCommittee =
-                  spec.getBeaconCommittee(state, aggregateSlot, aggregate.getData().getIndex());
+                  spec.getBeaconCommittee(state, aggregateSlot, aggregate.getFirstCommitteeIndex());
 
               final int aggregatorModulo =
                   specVersion.getValidatorsUtil().getAggregatorModulo(beaconCommittee.size());

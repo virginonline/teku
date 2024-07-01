@@ -74,8 +74,8 @@ public class GetStateCommittees extends RestApiEndpoint {
   GetStateCommittees(final ChainDataProvider chainDataProvider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getStateCommittees")
-            .summary("Get committees at state")
+            .operationId("getEpochCommittees")
+            .summary("Get all committees for a state.")
             .description("Retrieves the committees for the given state.")
             .pathParam(PARAMETER_STATE_ID)
             .queryParam(EPOCH_PARAMETER)
@@ -89,7 +89,7 @@ public class GetStateCommittees extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final Optional<UInt64> epoch = request.getOptionalQueryParameter(EPOCH_PARAMETER);
     final Optional<UInt64> committeeIndex = request.getOptionalQueryParameter(INDEX_PARAMETER);
     final Optional<UInt64> slot =

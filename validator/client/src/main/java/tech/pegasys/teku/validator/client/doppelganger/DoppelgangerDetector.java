@@ -117,7 +117,7 @@ public class DoppelgangerDetector {
     private final Set<BLSPublicKey> pubKeys;
     private Optional<UInt64> epochAtStart = Optional.empty();
     private final Map<UInt64, BLSPublicKey> detectedDoppelgangers = new HashMap<>();
-    private AtomicBoolean firstCheck = new AtomicBoolean(true);
+    private final AtomicBoolean firstCheck = new AtomicBoolean(true);
 
     public DoppelgangerDetectionTask(final UInt64 startTime, final Set<BLSPublicKey> pubKeys) {
       this.startTime = startTime;
@@ -286,7 +286,7 @@ public class DoppelgangerDetector {
     }
 
     private void logMissingIndices(
-        final Set<BLSPublicKey> pubKeys, Map<BLSPublicKey, UInt64> validatorIndicesByPubKey) {
+        final Set<BLSPublicKey> pubKeys, final Map<BLSPublicKey, UInt64> validatorIndicesByPubKey) {
       Set<BLSPublicKey> publicKeysWithoutIndices =
           pubKeys.stream()
               .filter(publicKey -> !validatorIndicesByPubKey.containsKey(publicKey))

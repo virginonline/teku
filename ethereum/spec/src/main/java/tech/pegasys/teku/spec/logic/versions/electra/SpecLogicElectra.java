@@ -14,6 +14,7 @@
 package tech.pegasys.teku.spec.logic.versions.electra;
 
 import java.util.Optional;
+import tech.pegasys.teku.infrastructure.time.TimeProvider;
 import tech.pegasys.teku.spec.config.SpecConfigElectra;
 import tech.pegasys.teku.spec.logic.common.AbstractSpecLogic;
 import tech.pegasys.teku.spec.logic.common.helpers.Predicates;
@@ -28,21 +29,23 @@ import tech.pegasys.teku.spec.logic.common.util.ForkChoiceUtil;
 import tech.pegasys.teku.spec.logic.common.util.LightClientUtil;
 import tech.pegasys.teku.spec.logic.common.util.SyncCommitteeUtil;
 import tech.pegasys.teku.spec.logic.common.util.ValidatorsUtil;
-import tech.pegasys.teku.spec.logic.versions.altair.helpers.BeaconStateAccessorsAltair;
 import tech.pegasys.teku.spec.logic.versions.altair.statetransition.epoch.ValidatorStatusFactoryAltair;
 import tech.pegasys.teku.spec.logic.versions.bellatrix.helpers.BeaconStateMutatorsBellatrix;
 import tech.pegasys.teku.spec.logic.versions.bellatrix.helpers.BellatrixTransitionHelpers;
 import tech.pegasys.teku.spec.logic.versions.bellatrix.util.BlindBlockUtilBellatrix;
-import tech.pegasys.teku.spec.logic.versions.capella.block.BlockProcessorCapella;
 import tech.pegasys.teku.spec.logic.versions.capella.operations.validation.OperationValidatorCapella;
-import tech.pegasys.teku.spec.logic.versions.capella.statetransition.epoch.EpochProcessorCapella;
-import tech.pegasys.teku.spec.logic.versions.deneb.block.BlockProcessorDeneb;
-import tech.pegasys.teku.spec.logic.versions.deneb.helpers.BeaconStateAccessorsDeneb;
 import tech.pegasys.teku.spec.logic.versions.deneb.helpers.MiscHelpersDeneb;
-import tech.pegasys.teku.spec.logic.versions.deneb.operations.validation.AttestationDataValidatorDeneb;
-import tech.pegasys.teku.spec.logic.versions.deneb.util.AttestationUtilDeneb;
 import tech.pegasys.teku.spec.logic.versions.deneb.util.ForkChoiceUtilDeneb;
+import tech.pegasys.teku.spec.logic.versions.electra.block.BlockProcessorElectra;
 import tech.pegasys.teku.spec.logic.versions.electra.forktransition.ElectraStateUpgrade;
+import tech.pegasys.teku.spec.logic.versions.electra.helpers.BeaconStateAccessorsElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.helpers.BeaconStateMutatorsElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.helpers.MiscHelpersElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.helpers.PredicatesElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.operations.validation.AttestationDataValidatorElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.operations.validation.VoluntaryExitValidatorElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.statetransition.epoch.EpochProcessorElectra;
+import tech.pegasys.teku.spec.logic.versions.electra.util.AttestationUtilElectra;
 import tech.pegasys.teku.spec.schemas.SchemaDefinitionsElectra;
 
 public class SpecLogicElectra extends AbstractSpecLogic {
@@ -52,7 +55,7 @@ public class SpecLogicElectra extends AbstractSpecLogic {
   private SpecLogicElectra(
       final Predicates predicates,
       final MiscHelpersDeneb miscHelpers,
-      final BeaconStateAccessorsAltair beaconStateAccessors,
+      final BeaconStateAccessorsElectra beaconStateAccessors,
       final BeaconStateMutatorsBellatrix beaconStateMutators,
       final OperationSignatureVerifier operationSignatureVerifier,
       final ValidatorsUtil validatorsUtil,
@@ -60,8 +63,8 @@ public class SpecLogicElectra extends AbstractSpecLogic {
       final AttestationUtil attestationUtil,
       final OperationValidator operationValidator,
       final ValidatorStatusFactoryAltair validatorStatusFactory,
-      final EpochProcessorCapella epochProcessor,
-      final BlockProcessorCapella blockProcessor,
+      final EpochProcessorElectra epochProcessor,
+      final BlockProcessorElectra blockProcessor,
       final ForkChoiceUtil forkChoiceUtil,
       final BlockProposalUtil blockProposalUtil,
       final BlindBlockUtil blindBlockUtil,
@@ -90,15 +93,18 @@ public class SpecLogicElectra extends AbstractSpecLogic {
   }
 
   public static SpecLogicElectra create(
-      final SpecConfigElectra config, final SchemaDefinitionsElectra schemaDefinitions) {
+      final SpecConfigElectra config,
+      final SchemaDefinitionsElectra schemaDefinitions,
+      final TimeProvider timeProvider) {
     // Helpers
-    final Predicates predicates = new Predicates(config);
-    final MiscHelpersDeneb miscHelpers =
-        new MiscHelpersDeneb(config, predicates, schemaDefinitions);
-    final BeaconStateAccessorsDeneb beaconStateAccessors =
-        new BeaconStateAccessorsDeneb(config, predicates, miscHelpers);
-    final BeaconStateMutatorsBellatrix beaconStateMutators =
-        new BeaconStateMutatorsBellatrix(config, miscHelpers, beaconStateAccessors);
+    final PredicatesElectra predicates = new PredicatesElectra(config);
+    final MiscHelpersElectra miscHelpers =
+        new MiscHelpersElectra(config, predicates, schemaDefinitions);
+    final BeaconStateAccessorsElectra beaconStateAccessors =
+        new BeaconStateAccessorsElectra(config, predicates, miscHelpers);
+    final BeaconStateMutatorsElectra beaconStateMutators =
+        new BeaconStateMutatorsElectra(
+            config, miscHelpers, beaconStateAccessors, schemaDefinitions);
 
     // Operation validation
     final OperationSignatureVerifier operationSignatureVerifier =
@@ -111,12 +117,18 @@ public class SpecLogicElectra extends AbstractSpecLogic {
         new BeaconStateUtil(
             config, schemaDefinitions, predicates, miscHelpers, beaconStateAccessors);
     final AttestationUtil attestationUtil =
-        new AttestationUtilDeneb(config, schemaDefinitions, beaconStateAccessors, miscHelpers);
+        new AttestationUtilElectra(config, schemaDefinitions, beaconStateAccessors, miscHelpers);
     final AttestationDataValidator attestationDataValidator =
-        new AttestationDataValidatorDeneb(config, miscHelpers, beaconStateAccessors);
+        new AttestationDataValidatorElectra(config, miscHelpers, beaconStateAccessors);
+    final VoluntaryExitValidatorElectra voluntaryExitValidatorElectra =
+        new VoluntaryExitValidatorElectra(config, predicates, beaconStateAccessors);
     final OperationValidator operationValidator =
         new OperationValidatorCapella(
-            config, predicates, beaconStateAccessors, attestationDataValidator, attestationUtil);
+            predicates,
+            beaconStateAccessors,
+            attestationDataValidator,
+            attestationUtil,
+            voluntaryExitValidatorElectra);
     final ValidatorStatusFactoryAltair validatorStatusFactory =
         new ValidatorStatusFactoryAltair(
             config,
@@ -125,8 +137,8 @@ public class SpecLogicElectra extends AbstractSpecLogic {
             predicates,
             miscHelpers,
             beaconStateAccessors);
-    final EpochProcessorCapella epochProcessor =
-        new EpochProcessorCapella(
+    final EpochProcessorElectra epochProcessor =
+        new EpochProcessorElectra(
             config,
             miscHelpers,
             beaconStateAccessors,
@@ -134,14 +146,15 @@ public class SpecLogicElectra extends AbstractSpecLogic {
             validatorsUtil,
             beaconStateUtil,
             validatorStatusFactory,
-            schemaDefinitions);
+            schemaDefinitions,
+            timeProvider);
     final SyncCommitteeUtil syncCommitteeUtil =
         new SyncCommitteeUtil(
             beaconStateAccessors, validatorsUtil, config, miscHelpers, schemaDefinitions);
     final LightClientUtil lightClientUtil =
         new LightClientUtil(beaconStateAccessors, syncCommitteeUtil, schemaDefinitions);
-    final BlockProcessorDeneb blockProcessor =
-        new BlockProcessorDeneb(
+    final BlockProcessorElectra blockProcessor =
+        new BlockProcessorElectra(
             config,
             predicates,
             miscHelpers,
@@ -164,7 +177,8 @@ public class SpecLogicElectra extends AbstractSpecLogic {
 
     // State upgrade
     final ElectraStateUpgrade stateUpgrade =
-        new ElectraStateUpgrade(config, schemaDefinitions, beaconStateAccessors);
+        new ElectraStateUpgrade(
+            config, schemaDefinitions, beaconStateAccessors, beaconStateMutators);
 
     return new SpecLogicElectra(
         predicates,

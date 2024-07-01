@@ -13,6 +13,7 @@
 
 package tech.pegasys.teku.infrastructure.ssz.schema.collections;
 
+import java.util.BitSet;
 import tech.pegasys.teku.infrastructure.ssz.collections.SszBitlist;
 import tech.pegasys.teku.infrastructure.ssz.primitive.SszBit;
 import tech.pegasys.teku.infrastructure.ssz.schema.collections.impl.SszBitlistSchemaImpl;
@@ -20,7 +21,7 @@ import tech.pegasys.teku.infrastructure.ssz.schema.collections.impl.SszBitlistSc
 public interface SszBitlistSchema<SszBitlistT extends SszBitlist>
     extends SszPrimitiveListSchema<Boolean, SszBit, SszBitlistT> {
 
-  static SszBitlistSchema<SszBitlist> create(long maxLength) {
+  static SszBitlistSchema<SszBitlist> create(final long maxLength) {
     return new SszBitlistSchemaImpl(maxLength);
   }
 
@@ -29,4 +30,15 @@ public interface SszBitlistSchema<SszBitlistT extends SszBitlist>
   }
 
   SszBitlistT ofBits(int size, int... setBitIndices);
+
+  /**
+   * Creates a SszBitlist by wrapping a given bitSet. This is an optimized constructor that DOES NOT
+   * clone the bitSet. It used in aggregating attestation pool. DO NOT MUTATE the after the
+   * wrapping!! SszBitlist is supposed to be immutable.
+   *
+   * @param size size of the SszBitlist
+   * @param bitSet data backing the ssz
+   * @return SszBitlist instance
+   */
+  SszBitlistT wrapBitSet(int size, BitSet bitSet);
 }

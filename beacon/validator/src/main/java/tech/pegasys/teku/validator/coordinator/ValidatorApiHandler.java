@@ -20,8 +20,9 @@ import static tech.pegasys.teku.infrastructure.logging.ValidatorLogger.VALIDATOR
 import static tech.pegasys.teku.infrastructure.metrics.Validator.DutyType.ATTESTATION_PRODUCTION;
 import static tech.pegasys.teku.infrastructure.metrics.Validator.ValidatorDutyMetricUtils.startTimer;
 import static tech.pegasys.teku.infrastructure.metrics.Validator.ValidatorDutyMetricsSteps.CREATE;
-import static tech.pegasys.teku.infrastructure.time.TimeUtilities.secondsToMillis;
 import static tech.pegasys.teku.spec.config.SpecConfig.GENESIS_SLOT;
+import static tech.pegasys.teku.spec.datastructures.validator.BroadcastValidationLevel.EQUIVOCATION;
+import static tech.pegasys.teku.spec.datastructures.validator.BroadcastValidationLevel.GOSSIP;
 
 import com.google.common.annotations.VisibleForTesting;
 import it.unimi.dsi.fastutil.ints.IntCollection;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -54,9 +56,11 @@ import tech.pegasys.teku.ethereum.json.types.validator.ProposerDuty;
 import tech.pegasys.teku.ethereum.json.types.validator.SyncCommitteeDuties;
 import tech.pegasys.teku.ethereum.json.types.validator.SyncCommitteeDuty;
 import tech.pegasys.teku.ethereum.json.types.validator.SyncCommitteeSelectionProof;
+import tech.pegasys.teku.ethereum.performance.trackers.BlockProductionAndPublishingPerformanceFactory;
 import tech.pegasys.teku.ethereum.performance.trackers.BlockProductionPerformance;
-import tech.pegasys.teku.ethereum.performance.trackers.BlockProductionPerformanceFactory;
+import tech.pegasys.teku.ethereum.performance.trackers.BlockPublishingPerformance;
 import tech.pegasys.teku.infrastructure.async.SafeFuture;
+import tech.pegasys.teku.infrastructure.collections.LimitedMap;
 import tech.pegasys.teku.infrastructure.ssz.SszList;
 import tech.pegasys.teku.infrastructure.unsigned.UInt64;
 import tech.pegasys.teku.networking.eth2.gossip.BlobSidecarGossipChannel;
@@ -116,7 +120,11 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
    */
   private static final int DUTY_EPOCH_TOLERANCE = 1;
 
-  private final BlockProductionPerformanceFactory blockProductionPerformanceFactory;
+  private final Map<UInt64, Bytes32> createdBlockRootsBySlotCache =
+      LimitedMap.createSynchronizedLRU(2);
+
+  private final BlockProductionAndPublishingPerformanceFactory
+      blockProductionAndPublishingPerformanceFactory;
   private final ChainDataProvider chainDataProvider;
   private final NodeDataProvider nodeDataProvider;
   private final CombinedChainDataClient combinedChainDataClient;
@@ -160,8 +168,10 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
       final SyncCommitteeMessagePool syncCommitteeMessagePool,
       final SyncCommitteeContributionPool syncCommitteeContributionPool,
       final SyncCommitteeSubscriptionManager syncCommitteeSubscriptionManager,
-      final BlockProductionPerformanceFactory blockProductionPerformanceFactory) {
-    this.blockProductionPerformanceFactory = blockProductionPerformanceFactory;
+      final BlockProductionAndPublishingPerformanceFactory
+          blockProductionAndPublishingPerformanceFactory) {
+    this.blockProductionAndPublishingPerformanceFactory =
+        blockProductionAndPublishingPerformanceFactory;
     this.chainDataProvider = chainDataProvider;
     this.nodeDataProvider = nodeDataProvider;
     this.combinedChainDataClient = combinedChainDataClient;
@@ -291,7 +301,7 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
 
   @Override
   public SafeFuture<Optional<Map<BLSPublicKey, ValidatorStatus>>> getValidatorStatuses(
-      Collection<BLSPublicKey> validatorIdentifiers) {
+      final Collection<BLSPublicKey> validatorIdentifiers) {
     return isSyncActive()
         ? SafeFuture.completedFuture(Optional.empty())
         : chainDataProvider
@@ -323,21 +333,14 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
       return NodeSyncingException.failedFuture();
     }
     final BlockProductionPerformance blockProductionPerformance =
-        blockProductionPerformanceFactory.create(slot);
+        blockProductionAndPublishingPerformanceFactory.createForProduction(slot);
     return forkChoiceTrigger
         .prepareForBlockProduction(slot, blockProductionPerformance)
         .thenCompose(
             __ ->
                 combinedChainDataClient.getStateForBlockProduction(
                     slot, forkChoiceTrigger.isForkChoiceOverrideLateBlockEnabled()))
-        .thenPeek(
-            maybeState -> {
-              maybeState.ifPresent(
-                  state ->
-                      blockProductionPerformance.slotTime(
-                          () -> secondsToMillis(spec.computeTimeAtSlot(state, slot))));
-              blockProductionPerformance.getStateAtSlot();
-            })
+        .thenPeek(__ -> blockProductionPerformance.getStateAtSlot())
         .thenCompose(
             blockSlotState ->
                 createBlock(
@@ -380,7 +383,12 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
             requestedBlinded,
             requestedBuilderBoostFactor,
             blockProductionPerformance)
-        .thenApply(Optional::of);
+        .thenApply(
+            block -> {
+              final Bytes32 blockRoot = block.blockContainer().getBlock().getRoot();
+              createdBlockRootsBySlotCache.put(slot, blockRoot);
+              return Optional.of(block);
+            });
   }
 
   @Override
@@ -480,13 +488,15 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
 
   @Override
   public SafeFuture<Optional<Attestation>> createAggregate(
-      final UInt64 slot, final Bytes32 attestationHashTreeRoot) {
+      final UInt64 slot,
+      final Bytes32 attestationHashTreeRoot,
+      final Optional<UInt64> committeeIndex) {
     if (isSyncActive()) {
       return NodeSyncingException.failedFuture();
     }
     return SafeFuture.completedFuture(
         attestationPool
-            .createAggregateFor(attestationHashTreeRoot)
+            .createAggregateFor(attestationHashTreeRoot, committeeIndex)
             .filter(attestation -> attestation.getData().getSlot().equals(slot))
             .map(ValidatableAttestation::getAttestation));
   }
@@ -494,6 +504,9 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
   @Override
   public SafeFuture<Optional<SyncCommitteeContribution>> createSyncCommitteeContribution(
       final UInt64 slot, final int subcommitteeIndex, final Bytes32 beaconBlockRoot) {
+    if (isSyncActive()) {
+      return NodeSyncingException.failedFuture();
+    }
     return SafeFuture.completedFuture(
         syncCommitteeMessagePool.createContribution(slot, beaconBlockRoot, subcommitteeIndex));
   }
@@ -548,7 +561,7 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
 
   @Override
   public SafeFuture<Void> subscribeToPersistentSubnets(
-      Set<SubnetSubscription> subnetSubscriptions) {
+      final Set<SubnetSubscription> subnetSubscriptions) {
     return SafeFuture.fromRunnable(
         () -> attestationTopicSubscriber.subscribeToPersistentSubnets(subnetSubscriptions));
   }
@@ -630,13 +643,24 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
   public SafeFuture<SendSignedBlockResult> sendSignedBlock(
       final SignedBlockContainer maybeBlindedBlockContainer,
       final BroadcastValidationLevel broadcastValidationLevel) {
+    final BlockPublishingPerformance blockPublishingPerformance =
+        blockProductionAndPublishingPerformanceFactory.createForPublishing(
+            maybeBlindedBlockContainer.getSlot());
     return blockPublisher
-        .sendSignedBlock(maybeBlindedBlockContainer, broadcastValidationLevel)
+        .sendSignedBlock(
+            maybeBlindedBlockContainer,
+            // do only EQUIVOCATION validation when GOSSIP validation has been requested and the
+            // block has been locally created
+            broadcastValidationLevel == GOSSIP && isLocallyCreatedBlock(maybeBlindedBlockContainer)
+                ? EQUIVOCATION
+                : broadcastValidationLevel,
+            blockPublishingPerformance)
         .exceptionally(
             ex -> {
               final String reason = getRootCauseMessage(ex);
               return SendSignedBlockResult.rejected(reason);
-            });
+            })
+        .alwaysRun(blockPublishingPerformance::complete);
   }
 
   @Override
@@ -834,6 +858,13 @@ public class ValidatorApiHandler implements ValidatorApiChannel {
       proposerSlots.add(new ProposerDuty(publicKey, proposerIndex, slot));
     }
     return proposerSlots;
+  }
+
+  private boolean isLocallyCreatedBlock(final SignedBlockContainer blockContainer) {
+    final Bytes32 blockRoot = blockContainer.getSignedBlock().getMessage().getRoot();
+    final Bytes32 locallyCreatedBlockRoot =
+        createdBlockRootsBySlotCache.get(blockContainer.getSlot());
+    return Objects.equals(blockRoot, locallyCreatedBlockRoot);
   }
 
   @Override

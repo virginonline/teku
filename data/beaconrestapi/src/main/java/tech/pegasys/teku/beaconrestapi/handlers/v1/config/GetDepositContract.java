@@ -53,7 +53,7 @@ public class GetDepositContract extends RestApiEndpoint {
       final Eth1Address depositContractAddress, final ConfigProvider configProvider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getDepositContractAddress")
+            .operationId("getDepositContract")
             .summary("Get deposit contract address")
             .description("Retrieve deposit contract address and genesis fork version.")
             .tags(TAG_CONFIG)
@@ -64,7 +64,7 @@ public class GetDepositContract extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final long depositChainId = configProvider.getGenesisSpecConfig().getDepositChainId();
     request.respondOk(new DepositContractData(depositChainId, depositContractAddress));
   }
@@ -73,7 +73,7 @@ public class GetDepositContract extends RestApiEndpoint {
     final UInt64 chainId;
     final Eth1Address address;
 
-    DepositContractData(long chainId, Eth1Address address) {
+    DepositContractData(final long chainId, final Eth1Address address) {
       this.chainId = UInt64.valueOf(chainId);
       this.address = address;
     }

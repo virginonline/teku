@@ -61,12 +61,10 @@ import tech.pegasys.teku.spec.util.DataStructureUtil;
 public class BlockProposalTestUtil {
   private final Spec spec;
   private final DataStructureUtil dataStructureUtil;
-  private final BeaconBlockBodyLists blockBodyLists;
 
   public BlockProposalTestUtil(final Spec spec) {
     this.spec = spec;
     this.dataStructureUtil = new DataStructureUtil(spec);
-    blockBodyLists = BeaconBlockBodyLists.ofSpec(spec);
   }
 
   public SafeFuture<SignedBlockAndState> createNewBlock(
@@ -269,8 +267,9 @@ public class BlockProposalTestUtil {
                 .withdrawals(List::of)
                 .blobGasUsed(() -> UInt64.ZERO)
                 .excessBlobGas(() -> UInt64.ZERO)
-                .depositReceipts(List::of)
-                .exits(List::of));
+                .depositRequests(List::of)
+                .withdrawalRequests(List::of)
+                .consolidationRequests(List::of));
   }
 
   private Boolean isMergeTransitionComplete(final BeaconState state) {
@@ -297,6 +296,7 @@ public class BlockProposalTestUtil {
       final boolean skipStateTransition)
       throws EpochProcessingException, SlotProcessingException {
     final UInt64 newEpoch = spec.computeEpochAtSlot(newSlot);
+    final BeaconBlockBodyLists blockBodyLists = BeaconBlockBodyLists.ofSpecAtSlot(spec, newSlot);
     if (skipStateTransition) {
       return createNewBlockSkippingStateTransition(
           signer,
@@ -355,6 +355,7 @@ public class BlockProposalTestUtil {
       final boolean skipStateTransition)
       throws EpochProcessingException, SlotProcessingException {
     final UInt64 newEpoch = spec.computeEpochAtSlot(newSlot);
+    final BeaconBlockBodyLists blockBodyLists = BeaconBlockBodyLists.ofSpecAtSlot(spec, newSlot);
     final List<KZGCommitment> generatedBlobKzgCommitments = blobsUtil.blobsToKzgCommitments(blobs);
 
     final SszListSchema<SszKZGCommitment, ?> blobKZGCommitmentsSchema =
@@ -405,7 +406,7 @@ public class BlockProposalTestUtil {
     }
   }
 
-  private Eth1Data getEth1DataStub(BeaconState state, UInt64 currentEpoch) {
+  private Eth1Data getEth1DataStub(final BeaconState state, final UInt64 currentEpoch) {
     final SpecConfig specConfig = spec.atSlot(state.getSlot()).getConfig();
     final int epochsPerPeriod = specConfig.getEpochsPerEth1VotingPeriod();
     UInt64 votingPeriod = currentEpoch.dividedBy(epochsPerPeriod);

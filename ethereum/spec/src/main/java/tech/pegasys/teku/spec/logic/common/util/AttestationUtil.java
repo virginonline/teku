@@ -98,11 +98,11 @@ public abstract class AttestationUtil {
    */
   public IndexedAttestation getIndexedAttestation(
       final BeaconState state, final Attestation attestation) {
-    final List<Integer> attestingIndices =
-        getAttestingIndices(state, attestation.getData(), attestation.getAggregationBits());
+    final List<Integer> attestingIndices = getAttestingIndices(state, attestation);
 
     final IndexedAttestationSchema indexedAttestationSchema =
         schemaDefinitions.getIndexedAttestationSchema();
+
     return indexedAttestationSchema.create(
         attestingIndices.stream()
             .sorted()
@@ -116,28 +116,30 @@ public abstract class AttestationUtil {
    * Return the sorted attesting indices corresponding to ``data`` and ``bits``.
    *
    * @param state
-   * @param data
-   * @param bits
+   * @param attestation
    * @return
    * @throws IllegalArgumentException
    * @see
-   *     <a>https://github.com/ethereum/consensus-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_attesting_indices</a>
+   *     <a>https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#get_attesting_indices</a>
    */
-  public IntList getAttestingIndices(
-      final BeaconState state, final AttestationData data, final SszBitlist bits) {
-    return IntList.of(streamAttestingIndices(state, data, bits).toArray());
+  public IntList getAttestingIndices(final BeaconState state, final Attestation attestation) {
+    return IntList.of(
+        streamAttestingIndices(state, attestation.getData(), attestation.getAggregationBits())
+            .toArray());
   }
 
   public IntStream streamAttestingIndices(
-      final BeaconState state, final AttestationData data, final SszBitlist bits) {
-    IntList committee =
+      final BeaconState state, final AttestationData data, final SszBitlist aggregationBits) {
+    final IntList committee =
         beaconStateAccessors.getBeaconCommittee(state, data.getSlot(), data.getIndex());
     checkArgument(
-        bits.size() == committee.size(),
+        aggregationBits.size() == committee.size(),
         "Aggregation bitlist size (%s) does not match committee size (%s)",
-        bits.size(),
+        aggregationBits.size(),
         committee.size());
-    return IntStream.range(0, committee.size()).filter(bits::getBit).map(committee::getInt);
+    return IntStream.range(0, committee.size())
+        .filter(aggregationBits::getBit)
+        .map(committee::getInt);
   }
 
   public AttestationProcessingResult isValidIndexedAttestation(
@@ -185,7 +187,7 @@ public abstract class AttestationUtil {
         .thenApply(
             result -> {
               if (result.isSuccessful()) {
-                attestation.saveCommitteeShufflingSeed(state);
+                attestation.saveCommitteeShufflingSeedAndCommitteesSize(state);
                 attestation.setValidIndexedAttestation();
               }
               return result;

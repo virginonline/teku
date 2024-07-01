@@ -50,7 +50,7 @@ public class GetPeerById extends RestApiEndpoint {
   GetPeerById(final NetworkDataProvider network) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getNodePeer")
+            .operationId("getPeer")
             .summary("Get node peer")
             .description("Retrieves data about the given peer.")
             .pathParam(PEER_ID_PARAMETER)
@@ -62,7 +62,7 @@ public class GetPeerById extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     request.header(Header.CACHE_CONTROL, CACHE_NONE);
     Optional<Eth2Peer> peer = network.getEth2PeerById(request.getPathParameter(PEER_ID_PARAMETER));
     if (peer.isEmpty()) {

@@ -189,7 +189,7 @@ public class RemoteValidatorApiHandler implements RemoteValidatorApiChannel {
   }
 
   private <T> Optional<Map<BLSPublicKey, T>> requestValidatorObject(
-      final List<BLSPublicKey> batch, Function<StateValidatorData, T> valueExtractor) {
+      final List<BLSPublicKey> batch, final Function<StateValidatorData, T> valueExtractor) {
     return typeDefClient
         .getStateValidators(convertPublicKeysToValidatorIds(batch))
         .map(responses -> convertToValidatorMapTypeDef(responses, valueExtractor));
@@ -262,12 +262,8 @@ public class RemoteValidatorApiHandler implements RemoteValidatorApiChannel {
   public SafeFuture<SendSignedBlockResult> sendSignedBlock(
       final SignedBlockContainer blockContainer,
       final BroadcastValidationLevel broadcastValidationLevel) {
-    // we are not going to use V2 to send blocks. If V1 will be deprecated we won't specify a
-    // validation level in any case
-    if (broadcastValidationLevel != BroadcastValidationLevel.NOT_REQUIRED) {
-      LOG.warn("broadcastValidationLevel has been requested but will be ignored.");
-    }
-    return sendRequest(() -> typeDefClient.sendSignedBlock(blockContainer));
+    return sendRequest(
+        () -> typeDefClient.sendSignedBlock(blockContainer, broadcastValidationLevel));
   }
 
   @Override
@@ -335,7 +331,9 @@ public class RemoteValidatorApiHandler implements RemoteValidatorApiChannel {
 
   @Override
   public SafeFuture<Optional<Attestation>> createAggregate(
-      final UInt64 slot, final Bytes32 attestationHashTreeRoot) {
+      final UInt64 slot,
+      final Bytes32 attestationHashTreeRoot,
+      final Optional<UInt64> committeeIndex) {
     return sendRequest(
         () ->
             apiClient

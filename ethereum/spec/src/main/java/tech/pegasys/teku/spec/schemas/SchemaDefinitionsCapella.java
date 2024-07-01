@@ -85,12 +85,14 @@ public class SchemaDefinitionsCapella extends SchemaDefinitionsBellatrix {
             specConfig,
             getAttesterSlashingSchema(),
             signedBlsToExecutionChangeSchema,
+            getMaxValidatorPerAttestation(specConfig),
             "BeaconBlockBodyCapella");
     this.blindedBeaconBlockBodySchema =
         BlindedBeaconBlockBodySchemaCapellaImpl.create(
             specConfig,
             getAttesterSlashingSchema(),
             signedBlsToExecutionChangeSchema,
+            getMaxValidatorPerAttestation(specConfig),
             "BlindedBlockBodyCapella");
     this.beaconBlockSchema = new BeaconBlockSchema(beaconBlockBodySchema, "BeaconBlockCapella");
     this.blindedBeaconBlockSchema =
@@ -109,7 +111,7 @@ public class SchemaDefinitionsCapella extends SchemaDefinitionsBellatrix {
   public static SchemaDefinitionsCapella required(final SchemaDefinitions schemaDefinitions) {
     checkArgument(
         schemaDefinitions instanceof SchemaDefinitionsCapella,
-        "Expected definitions of type %s by got %s",
+        "Expected definitions of type %s but got %s",
         SchemaDefinitionsCapella.class,
         schemaDefinitions.getClass());
     return (SchemaDefinitionsCapella) schemaDefinitions;

@@ -84,18 +84,27 @@ public abstract class AbstractTypeDefRequest {
       final Map<String, String> urlParams,
       final Map<String, String> queryParams,
       final ResponseHandler<T> responseHandler) {
-    return get(apiMethod, urlParams, queryParams, Map.of(), responseHandler);
+    return get(apiMethod, urlParams, queryParams, emptyMap(), emptyMap(), responseHandler);
   }
 
   protected <T> Optional<T> get(
       final ValidatorApiMethod apiMethod,
       final Map<String, String> urlParams,
       final Map<String, String> queryParams,
+      final Map<String, String> encodedQueryParams,
       final Map<String, String> headers,
       final ResponseHandler<T> responseHandler) {
     final HttpUrl.Builder httpUrlBuilder = urlBuilder(apiMethod, urlParams);
     if (queryParams != null && !queryParams.isEmpty()) {
       queryParams.forEach(httpUrlBuilder::addQueryParameter);
+    }
+
+    // The encodedQueryParams are considered to be encoded already
+    // and should not be encoded again. This is useful to prevent
+    // the comma in an array of values (e.g. id=1,2,3) from being
+    // encoded.
+    if (encodedQueryParams != null && !encodedQueryParams.isEmpty()) {
+      encodedQueryParams.forEach(httpUrlBuilder::addEncodedQueryParameter);
     }
 
     final Request.Builder builder = requestBuilder().url(httpUrlBuilder.build());
@@ -111,7 +120,21 @@ public abstract class AbstractTypeDefRequest {
       final TObject requestBodyObj,
       final SerializableTypeDefinition<TObject> objectTypeDefinition,
       final ResponseHandler<T> responseHandler) {
+    return postJson(
+        apiMethod, urlParams, emptyMap(), requestBodyObj, objectTypeDefinition, responseHandler);
+  }
+
+  protected <T, TObject> Optional<T> postJson(
+      final ValidatorApiMethod apiMethod,
+      final Map<String, String> urlParams,
+      final Map<String, String> queryParams,
+      final TObject requestBodyObj,
+      final SerializableTypeDefinition<TObject> objectTypeDefinition,
+      final ResponseHandler<T> responseHandler) {
     final HttpUrl.Builder httpUrlBuilder = urlBuilder(apiMethod, urlParams);
+    if (queryParams != null && !queryParams.isEmpty()) {
+      queryParams.forEach(httpUrlBuilder::addQueryParameter);
+    }
     final String requestBody;
     final Request request;
     try {
@@ -133,7 +156,20 @@ public abstract class AbstractTypeDefRequest {
       final Map<String, String> headers,
       final byte[] objectBytes,
       final ResponseHandler<T> responseHandler) {
+    return postOctetStream(apiMethod, urlParams, emptyMap(), headers, objectBytes, responseHandler);
+  }
+
+  protected <T> Optional<T> postOctetStream(
+      final ValidatorApiMethod apiMethod,
+      final Map<String, String> urlParams,
+      final Map<String, String> queryParams,
+      final Map<String, String> headers,
+      final byte[] objectBytes,
+      final ResponseHandler<T> responseHandler) {
     final HttpUrl.Builder httpUrlBuilder = urlBuilder(apiMethod, urlParams);
+    if (queryParams != null && !queryParams.isEmpty()) {
+      queryParams.forEach(httpUrlBuilder::addQueryParameter);
+    }
     final Request.Builder builder = requestBuilder();
     headers.forEach(builder::addHeader);
     final Request request =

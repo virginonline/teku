@@ -102,7 +102,7 @@ public class AltairStateUpgrade implements StateUpgrade<BeaconStateAltair> {
       // Apply flags to all attesting validators
       final SszMutableList<SszByte> epochParticipation = state.getPreviousEpochParticipation();
       attestationUtil
-          .streamAttestingIndices(state, data, attestation.getAggregationBits())
+          .streamAttestingIndices(state, attestation.getData(), attestation.getAggregationBits())
           .forEach(
               index -> {
                 final byte previousFlags = epochParticipation.get(index).get();

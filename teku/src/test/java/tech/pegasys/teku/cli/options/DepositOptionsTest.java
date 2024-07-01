@@ -93,7 +93,7 @@ public class DepositOptionsTest extends AbstractBeaconNodeCommandTest {
   }
 
   @ParameterizedTest(name = "{0}")
-  @ValueSource(strings = {"mainnet", "goerli", "prater", "gnosis", "sepolia"})
+  @ValueSource(strings = {"mainnet", "holesky", "gnosis", "sepolia"})
   public void shouldSetDefaultBundleSnapshotPathForSupportedNetwork(final String network) {
     final String[] args = {"--network=" + network, "--deposit-snapshot-enabled"};
     final TekuConfiguration config = getTekuConfigurationFromArguments(args);
@@ -182,5 +182,12 @@ public class DepositOptionsTest extends AbstractBeaconNodeCommandTest {
     assertThat(depositTreeSnapshotConfiguration.isBundledDepositSnapshotEnabled()).isFalse();
     assertThat(depositTreeSnapshotConfiguration.getCustomDepositSnapshotPath())
         .hasValue("/foo/bar");
+  }
+
+  @Test
+  public void shouldHaveDepositContractLogsSyncingEnabledByDefault() {
+    final String[] args = {};
+    final TekuConfiguration config = getTekuConfigurationFromArguments(args);
+    assertThat(config.powchain().isDepositContractLogsSyncingEnabled()).isTrue();
   }
 }

@@ -20,7 +20,6 @@ import static tech.pegasys.teku.infrastructure.http.HttpStatusCodes.SC_BAD_REQUE
 import static tech.pegasys.teku.infrastructure.http.RestApiConstants.EXECUTION_OPTIMISTIC;
 import static tech.pegasys.teku.infrastructure.http.RestApiConstants.FINALIZED;
 import static tech.pegasys.teku.infrastructure.http.RestApiConstants.TAG_BEACON;
-import static tech.pegasys.teku.infrastructure.http.RestApiConstants.TAG_VALIDATOR_REQUIRED;
 import static tech.pegasys.teku.infrastructure.json.types.CoreTypes.BOOLEAN_TYPE;
 import static tech.pegasys.teku.infrastructure.json.types.CoreTypes.UINT64_TYPE;
 import static tech.pegasys.teku.infrastructure.json.types.SerializableTypeDefinition.listOf;
@@ -71,10 +70,10 @@ public class GetStateSyncCommittees extends RestApiEndpoint {
   public GetStateSyncCommittees(final ChainDataProvider chainDataProvider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getStateSyncCommittees")
-            .summary("Get sync committees")
+            .operationId("getEpochSyncCommittees")
+            .summary("Get sync committees for a state.")
             .description("Retrieves the sync committees for the given state.")
-            .tags(TAG_BEACON, TAG_VALIDATOR_REQUIRED)
+            .tags(TAG_BEACON)
             .pathParam(PARAMETER_STATE_ID)
             .queryParam(EPOCH_PARAMETER)
             .response(HttpStatusCodes.SC_OK, "Request successful", RESPONSE_TYPE)
@@ -84,7 +83,7 @@ public class GetStateSyncCommittees extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final Optional<UInt64> epoch = request.getOptionalQueryParameter(EPOCH_PARAMETER);
     final SafeFuture<Optional<ObjectAndMetaData<StateSyncCommitteesData>>> future =
         chainDataProvider.getStateSyncCommittees(

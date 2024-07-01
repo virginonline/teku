@@ -49,8 +49,8 @@ public class PostSyncCommittees extends RestApiEndpoint {
   public PostSyncCommittees(final ValidatorDataProvider provider) {
     super(
         EndpointMetadata.post(ROUTE)
-            .operationId("postSyncCommittees")
-            .summary("Submit sync committee messages to node")
+            .operationId("submitPoolSyncCommitteeSignatures")
+            .summary("Submit sync committee signatures to node")
             .description(
                 "Submits sync committee message objects to the node.\n\n"
                     + "Sync committee messages are not present in phase0, but are required for Altair networks.\n\n"
@@ -72,7 +72,7 @@ public class PostSyncCommittees extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final List<SyncCommitteeMessage> messages = request.getRequestBody();
     final SafeFuture<List<SubmitDataError>> future = provider.submitCommitteeSignatures(messages);
 

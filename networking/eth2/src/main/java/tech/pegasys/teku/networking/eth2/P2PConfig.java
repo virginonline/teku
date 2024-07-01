@@ -15,6 +15,7 @@ package tech.pegasys.teku.networking.eth2;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.time.Duration;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import tech.pegasys.teku.infrastructure.exceptions.InvalidConfigurationException;
@@ -25,6 +26,7 @@ import tech.pegasys.teku.networking.p2p.discovery.DiscoveryConfig;
 import tech.pegasys.teku.networking.p2p.network.config.NetworkConfig;
 import tech.pegasys.teku.spec.Spec;
 import tech.pegasys.teku.spec.config.NetworkingSpecConfig;
+import tech.pegasys.teku.spec.config.SpecConfig;
 
 public class P2PConfig {
 
@@ -73,7 +75,7 @@ public class P2PConfig {
       final int batchVerifyQueueCapacity,
       final int batchVerifyMaxBatchSize,
       final boolean batchVerifyStrictThreadLimitEnabled,
-      boolean allTopicsFilterEnabled) {
+      final boolean allTopicsFilterEnabled) {
     this.spec = spec;
     this.networkConfig = networkConfig;
     this.discoveryConfig = discoveryConfig;
@@ -161,7 +163,7 @@ public class P2PConfig {
 
     private Spec spec;
     private Boolean isGossipScoringEnabled = DEFAULT_GOSSIP_SCORING_ENABLED;
-    private GossipEncoding gossipEncoding = GossipEncoding.SSZ_SNAPPY;
+    private final GossipEncoding gossipEncoding = GossipEncoding.SSZ_SNAPPY;
     private Integer targetSubnetSubscriberCount = DEFAULT_P2P_TARGET_SUBNET_SUBSCRIBER_COUNT;
     private Boolean subscribeAllSubnetsEnabled = DEFAULT_SUBSCRIBE_ALL_SUBNETS_ENABLED;
     private Integer peerRateLimit = DEFAULT_PEER_RATE_LIMIT;
@@ -182,16 +184,26 @@ public class P2PConfig {
           isGossipScoringEnabled
               ? GossipConfigurator.scoringEnabled(spec)
               : GossipConfigurator.NOOP;
+      final SpecConfig specConfig = spec.getGenesisSpecConfig();
       final Eth2Context eth2Context =
           Eth2Context.builder()
-              .activeValidatorCount(spec.getGenesisSpecConfig().getMinGenesisActiveValidatorCount())
+              .activeValidatorCount(specConfig.getMinGenesisActiveValidatorCount())
               .gossipEncoding(gossipEncoding)
               .build();
-      networkConfig.gossipConfig(c -> gossipConfigurator.configure(c, eth2Context));
+      networkConfig.gossipConfig(
+          builder -> {
+            gossipConfigurator.configure(builder, eth2Context);
+            builder.seenTTL(
+                Duration.ofSeconds(
+                    (long) specConfig.getSecondsPerSlot() * specConfig.getSlotsPerEpoch() * 2));
+          });
 
-      NetworkConfig networkConfig = this.networkConfig.build();
+      final NetworkConfig networkConfig = this.networkConfig.build();
       discoveryConfig.listenUdpPortDefault(networkConfig.getListenPort());
+      discoveryConfig.listenUdpPortIpv6Default(networkConfig.getListenPortIpv6());
       discoveryConfig.advertisedUdpPortDefault(OptionalInt.of(networkConfig.getAdvertisedPort()));
+      discoveryConfig.advertisedUdpPortIpv6Default(
+          OptionalInt.of(networkConfig.getAdvertisedPortIpv6()));
 
       return new P2PConfig(
           spec,

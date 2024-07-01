@@ -15,12 +15,14 @@ package tech.pegasys.teku.validator.remote;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import tech.pegasys.teku.infrastructure.async.SafeFuture;
 import tech.pegasys.teku.infrastructure.logging.ValidatorLogger;
@@ -29,7 +31,10 @@ import tech.pegasys.teku.validator.api.required.SyncingStatus;
 
 public class BeaconNodeReadinessManagerTest {
 
-  private static final SyncingStatus SYNCED_STATUS =
+  private static final SyncingStatus SYNCED_OPTIMISTIC_STATUS =
+      new SyncingStatus(UInt64.ONE, UInt64.ZERO, false, Optional.of(true), Optional.empty());
+
+  private static final SyncingStatus SYNCED_NON_OPTIMISTIC_STATUS =
       new SyncingStatus(UInt64.ONE, UInt64.ZERO, false, Optional.empty(), Optional.empty());
 
   private static final SyncingStatus SYNCING_STATUS =
@@ -89,7 +94,8 @@ public class BeaconNodeReadinessManagerTest {
 
     verifyNoInteractions(validatorLogger, beaconNodeReadinessChannel);
 
-    when(beaconNodeApi.getSyncingStatus()).thenReturn(SafeFuture.completedFuture(SYNCED_STATUS));
+    when(beaconNodeApi.getSyncingStatus())
+        .thenReturn(SafeFuture.completedFuture(SYNCED_OPTIMISTIC_STATUS));
     when(failoverBeaconNodeApi.getSyncingStatus())
         .thenReturn(SafeFuture.completedFuture(SYNCING_STATUS));
 
@@ -115,14 +121,16 @@ public class BeaconNodeReadinessManagerTest {
     verify(beaconNodeReadinessChannel).onPrimaryNodeNotReady();
 
     // primary node recovers
-    when(beaconNodeApi.getSyncingStatus()).thenReturn(SafeFuture.completedFuture(SYNCED_STATUS));
+    when(beaconNodeApi.getSyncingStatus())
+        .thenReturn(SafeFuture.completedFuture(SYNCED_OPTIMISTIC_STATUS));
 
     advanceToNextQueryPeriod(beaconNodeReadinessManager);
 
     assertThat(beaconNodeReadinessManager.isReady(beaconNodeApi)).isTrue();
 
     verify(validatorLogger).primaryBeaconNodeIsBackAndReady();
-    verify(beaconNodeReadinessChannel).onPrimaryNodeBackReady();
+    // call it every time we check, channel will filter it
+    verify(beaconNodeReadinessChannel, times(2)).onPrimaryNodeReady();
   }
 
   @Test
@@ -136,7 +144,7 @@ public class BeaconNodeReadinessManagerTest {
     when(beaconNodeApi.getSyncingStatus())
         .thenReturn(SafeFuture.completedFuture(EL_OFFLINE_STATUS));
     when(failoverBeaconNodeApi.getSyncingStatus())
-        .thenReturn(SafeFuture.completedFuture(SYNCED_STATUS));
+        .thenReturn(SafeFuture.completedFuture(SYNCED_OPTIMISTIC_STATUS));
 
     advanceToNextQueryPeriod(beaconNodeReadinessManager);
 
@@ -148,7 +156,7 @@ public class BeaconNodeReadinessManagerTest {
   }
 
   @Test
-  public void ordersFailoversByReadiness() {
+  public void ordersFailoversByReadinessStatus() {
     final RemoteValidatorApiChannel anotherFailover = mock(RemoteValidatorApiChannel.class);
     final RemoteValidatorApiChannel yetAnotherFailover = mock(RemoteValidatorApiChannel.class);
     final BeaconNodeReadinessManager beaconNodeReadinessManager =
@@ -158,20 +166,22 @@ public class BeaconNodeReadinessManagerTest {
             validatorLogger,
             beaconNodeReadinessChannel);
 
-    when(beaconNodeApi.getSyncingStatus()).thenReturn(SafeFuture.completedFuture(SYNCED_STATUS));
+    when(beaconNodeApi.getSyncingStatus())
+        .thenReturn(SafeFuture.completedFuture(SYNCED_OPTIMISTIC_STATUS));
 
     when(failoverBeaconNodeApi.getSyncingStatus())
         .thenReturn(SafeFuture.completedFuture(SYNCING_STATUS));
-    when(anotherFailover.getSyncingStatus()).thenReturn(SafeFuture.completedFuture(SYNCED_STATUS));
+    when(anotherFailover.getSyncingStatus())
+        .thenReturn(SafeFuture.completedFuture(SYNCED_OPTIMISTIC_STATUS));
     when(yetAnotherFailover.getSyncingStatus())
-        .thenReturn(SafeFuture.completedFuture(SYNCING_STATUS));
+        .thenReturn(SafeFuture.completedFuture(SYNCED_NON_OPTIMISTIC_STATUS));
 
     advanceToNextQueryPeriod(beaconNodeReadinessManager);
 
     assertThat(beaconNodeReadinessManager.getFailoversInOrderOfReadiness())
         .toIterable()
-        .asList()
-        .containsExactly(anotherFailover, failoverBeaconNodeApi, yetAnotherFailover);
+        .asInstanceOf(InstanceOfAssertFactories.LIST)
+        .containsExactly(yetAnotherFailover, anotherFailover, failoverBeaconNodeApi);
   }
 
   private void advanceToNextQueryPeriod(

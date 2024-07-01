@@ -23,20 +23,57 @@ public class SpecConfigElectraImpl extends DelegatingSpecConfigDeneb implements 
   private final Bytes4 electraForkVersion;
   private final UInt64 electraForkEpoch;
 
-  private final int maxDepositReceiptsPerPayload;
-  private final int maxExecutionLayerExits;
+  private final UInt64 minPerEpochChurnLimitElectra;
+
+  private final UInt64 minActivationBalance;
+  private final UInt64 maxEffectiveBalanceElectra;
+  private final int pendingBalanceDepositsLimit;
+  private final int pendingPartialWithdrawalsLimit;
+  private final int pendingConsolidationsLimit;
+  private final int minSlashingPenaltyQuotientElectra;
+  private final int whistleblowerRewardQuotientElectra;
+  private final int maxAttesterSlashingsElectra;
+  private final int maxAttestationsElectra;
+  private final int maxConsolidationRequestsPerPayload;
+  private final int maxDepositRequestsPerPayload;
+  private final int maxWithdrawalRequestsPerPayload;
+  private final int maxPendingPartialsPerWithdrawalsSweep;
 
   public SpecConfigElectraImpl(
       final SpecConfigDeneb specConfig,
       final Bytes4 electraForkVersion,
       final UInt64 electraForkEpoch,
-      final int maxDepositReceiptsPerPayload,
-      final int maxExecutionLayerExits) {
+      final UInt64 minPerEpochChurnLimitElectra,
+      final UInt64 minActivationBalance,
+      final UInt64 maxEffectiveBalanceElectra,
+      final int pendingBalanceDepositsLimit,
+      final int pendingPartialWithdrawalsLimit,
+      final int pendingConsolidationsLimit,
+      final int minSlashingPenaltyQuotientElectra,
+      final int whistleblowerRewardQuotientElectra,
+      final int maxAttesterSlashingsElectra,
+      final int maxAttestationsElectra,
+      final int maxConsolidationRequestsPerPayload,
+      final int maxDepositRequestsPerPayload,
+      final int maxWithdrawalRequestsPerPayload,
+      final int maxPendingPartialsPerWithdrawalsSweep) {
     super(specConfig);
     this.electraForkVersion = electraForkVersion;
     this.electraForkEpoch = electraForkEpoch;
-    this.maxDepositReceiptsPerPayload = maxDepositReceiptsPerPayload;
-    this.maxExecutionLayerExits = maxExecutionLayerExits;
+    this.minPerEpochChurnLimitElectra = minPerEpochChurnLimitElectra;
+    this.minActivationBalance = minActivationBalance;
+    this.maxEffectiveBalanceElectra = maxEffectiveBalanceElectra;
+    this.pendingBalanceDepositsLimit = pendingBalanceDepositsLimit;
+    this.pendingPartialWithdrawalsLimit = pendingPartialWithdrawalsLimit;
+    this.pendingConsolidationsLimit = pendingConsolidationsLimit;
+    this.minSlashingPenaltyQuotientElectra = minSlashingPenaltyQuotientElectra;
+    this.whistleblowerRewardQuotientElectra = whistleblowerRewardQuotientElectra;
+    this.maxAttesterSlashingsElectra = maxAttesterSlashingsElectra;
+    this.maxAttestationsElectra = maxAttestationsElectra;
+    this.maxConsolidationRequestsPerPayload = maxConsolidationRequestsPerPayload;
+    this.maxDepositRequestsPerPayload = maxDepositRequestsPerPayload;
+    this.maxWithdrawalRequestsPerPayload = maxWithdrawalRequestsPerPayload;
+    this.maxPendingPartialsPerWithdrawalsSweep = maxPendingPartialsPerWithdrawalsSweep;
   }
 
   @Override
@@ -50,13 +87,73 @@ public class SpecConfigElectraImpl extends DelegatingSpecConfigDeneb implements 
   }
 
   @Override
-  public int getMaxDepositReceiptsPerPayload() {
-    return maxDepositReceiptsPerPayload;
+  public UInt64 getMinPerEpochChurnLimitElectra() {
+    return minPerEpochChurnLimitElectra;
   }
 
   @Override
-  public int getMaxExecutionLayerExits() {
-    return maxExecutionLayerExits;
+  public UInt64 getMinActivationBalance() {
+    return minActivationBalance;
+  }
+
+  @Override
+  public UInt64 getMaxEffectiveBalanceElectra() {
+    return maxEffectiveBalanceElectra;
+  }
+
+  @Override
+  public int getPendingBalanceDepositsLimit() {
+    return pendingBalanceDepositsLimit;
+  }
+
+  @Override
+  public int getPendingPartialWithdrawalsLimit() {
+    return pendingPartialWithdrawalsLimit;
+  }
+
+  @Override
+  public int getPendingConsolidationsLimit() {
+    return pendingConsolidationsLimit;
+  }
+
+  @Override
+  public int getMinSlashingPenaltyQuotientElectra() {
+    return minSlashingPenaltyQuotientElectra;
+  }
+
+  @Override
+  public int getWhistleblowerRewardQuotientElectra() {
+    return whistleblowerRewardQuotientElectra;
+  }
+
+  @Override
+  public int getMaxAttesterSlashingsElectra() {
+    return maxAttesterSlashingsElectra;
+  }
+
+  @Override
+  public int getMaxAttestationsElectra() {
+    return maxAttestationsElectra;
+  }
+
+  @Override
+  public int getMaxConsolidationRequestsPerPayload() {
+    return maxConsolidationRequestsPerPayload;
+  }
+
+  @Override
+  public int getMaxDepositRequestsPerPayload() {
+    return maxDepositRequestsPerPayload;
+  }
+
+  @Override
+  public int getMaxWithdrawalRequestsPerPayload() {
+    return maxWithdrawalRequestsPerPayload;
+  }
+
+  @Override
+  public int getMaxPendingPartialsPerWithdrawalsSweep() {
+    return maxPendingPartialsPerWithdrawalsSweep;
   }
 
   @Override
@@ -76,8 +173,20 @@ public class SpecConfigElectraImpl extends DelegatingSpecConfigDeneb implements 
     return Objects.equals(specConfig, that.specConfig)
         && Objects.equals(electraForkVersion, that.electraForkVersion)
         && Objects.equals(electraForkEpoch, that.electraForkEpoch)
-        && maxDepositReceiptsPerPayload == that.maxDepositReceiptsPerPayload
-        && maxExecutionLayerExits == that.maxExecutionLayerExits;
+        && Objects.equals(minPerEpochChurnLimitElectra, that.minPerEpochChurnLimitElectra)
+        && Objects.equals(minActivationBalance, that.minActivationBalance)
+        && Objects.equals(maxEffectiveBalanceElectra, that.maxEffectiveBalanceElectra)
+        && pendingBalanceDepositsLimit == that.pendingBalanceDepositsLimit
+        && pendingPartialWithdrawalsLimit == that.pendingPartialWithdrawalsLimit
+        && pendingConsolidationsLimit == that.pendingConsolidationsLimit
+        && minSlashingPenaltyQuotientElectra == that.minSlashingPenaltyQuotientElectra
+        && whistleblowerRewardQuotientElectra == that.whistleblowerRewardQuotientElectra
+        && maxAttesterSlashingsElectra == that.maxAttesterSlashingsElectra
+        && maxAttestationsElectra == that.maxAttestationsElectra
+        && maxConsolidationRequestsPerPayload == that.maxConsolidationRequestsPerPayload
+        && maxDepositRequestsPerPayload == that.maxDepositRequestsPerPayload
+        && maxWithdrawalRequestsPerPayload == that.maxWithdrawalRequestsPerPayload
+        && maxPendingPartialsPerWithdrawalsSweep == that.maxPendingPartialsPerWithdrawalsSweep;
   }
 
   @Override
@@ -86,7 +195,19 @@ public class SpecConfigElectraImpl extends DelegatingSpecConfigDeneb implements 
         specConfig,
         electraForkVersion,
         electraForkEpoch,
-        maxDepositReceiptsPerPayload,
-        maxExecutionLayerExits);
+        minPerEpochChurnLimitElectra,
+        minActivationBalance,
+        maxEffectiveBalanceElectra,
+        pendingBalanceDepositsLimit,
+        pendingPartialWithdrawalsLimit,
+        pendingConsolidationsLimit,
+        minSlashingPenaltyQuotientElectra,
+        whistleblowerRewardQuotientElectra,
+        maxAttesterSlashingsElectra,
+        maxAttestationsElectra,
+        maxConsolidationRequestsPerPayload,
+        maxDepositRequestsPerPayload,
+        maxWithdrawalRequestsPerPayload,
+        maxPendingPartialsPerWithdrawalsSweep);
   }
 }

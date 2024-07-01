@@ -52,7 +52,7 @@ public class PostSyncDuties extends RestApiEndpoint {
       final SyncDataProvider syncDataProvider, final ValidatorDataProvider validatorDataProvider) {
     super(
         EndpointMetadata.post(ROUTE)
-            .operationId("postSyncDuties")
+            .operationId("getSyncCommitteeDuties")
             .summary("Get sync committee duties")
             .description("Requests the beacon node to provide a set of sync committee duties")
             .tags(TAG_VALIDATOR, TAG_VALIDATOR_REQUIRED)
@@ -66,7 +66,7 @@ public class PostSyncDuties extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     if (!validatorDataProvider.isStoreAvailable() || syncDataProvider.isSyncing()) {
       request.respondError(SC_SERVICE_UNAVAILABLE, SERVICE_UNAVAILABLE);
       return;

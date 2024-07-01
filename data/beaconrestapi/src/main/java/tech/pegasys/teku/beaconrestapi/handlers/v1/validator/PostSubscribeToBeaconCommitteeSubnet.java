@@ -76,8 +76,8 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
   public PostSubscribeToBeaconCommitteeSubnet(final ValidatorDataProvider provider) {
     super(
         EndpointMetadata.post(ROUTE)
-            .operationId("postSubscribeToBeaconCommitteeSubnet")
-            .summary("Subscribe to a committee subnet")
+            .operationId("prepareBeaconCommitteeSubnet")
+            .summary("Signal beacon node to prepare for a committee subnet")
             .description(
                 "After Beacon node receives this request, search using discv5 for peers related to this subnet and replace current peers with those ones if necessary If validator is_aggregator, beacon node must:\n"
                     + "- announce subnet topic subscription on gossipsub\n"
@@ -94,7 +94,7 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final List<CommitteeSubscriptionData> requestBody = request.getRequestBody();
     final List<CommitteeSubscriptionRequest> subscriptionRequests =
         requestBody.stream()
@@ -116,11 +116,11 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
     CommitteeSubscriptionData() {}
 
     CommitteeSubscriptionData(
-        int validatorIndex,
-        int committeeIndex,
-        UInt64 committeesAtSlot,
-        UInt64 slot,
-        boolean isAggregator) {
+        final int validatorIndex,
+        final int committeeIndex,
+        final UInt64 committeesAtSlot,
+        final UInt64 slot,
+        final boolean isAggregator) {
       this.validatorIndex = validatorIndex;
       this.committeeIndex = committeeIndex;
       this.committeesAtSlot = committeesAtSlot;
@@ -137,7 +137,7 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
       return validatorIndex;
     }
 
-    public void setValidatorIndex(int validatorIndex) {
+    public void setValidatorIndex(final int validatorIndex) {
       this.validatorIndex = validatorIndex;
     }
 
@@ -145,7 +145,7 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
       return committeeIndex;
     }
 
-    public void setCommitteeIndex(int committeeIndex) {
+    public void setCommitteeIndex(final int committeeIndex) {
       this.committeeIndex = committeeIndex;
     }
 
@@ -153,7 +153,7 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
       return committeesAtSlot;
     }
 
-    public void setCommitteesAtSlot(UInt64 committeesAtSlot) {
+    public void setCommitteesAtSlot(final UInt64 committeesAtSlot) {
       this.committeesAtSlot = committeesAtSlot;
     }
 
@@ -161,7 +161,7 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
       return slot;
     }
 
-    public void setSlot(UInt64 slot) {
+    public void setSlot(final UInt64 slot) {
       this.slot = slot;
     }
 
@@ -169,12 +169,12 @@ public class PostSubscribeToBeaconCommitteeSubnet extends RestApiEndpoint {
       return isAggregator;
     }
 
-    public void setAggregator(boolean aggregator) {
+    public void setAggregator(final boolean aggregator) {
       isAggregator = aggregator;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }

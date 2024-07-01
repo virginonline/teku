@@ -62,8 +62,9 @@ public class GetExpectedWithdrawals extends RestApiEndpoint {
       final SchemaDefinitionCache schemaDefinitionCache) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("GetExpectedWithdrawals")
-            .summary("Get Expected Withdrawals")
+            .operationId("getNextWithdrawals")
+            .summary(
+                "Get the withdrawals that are to be included for the block built on the specified state.")
             .description(
                 "Get the withdrawals computed from the specified state, that will be included in the block \n"
                     + "    that gets built on the specified state.")
@@ -78,7 +79,7 @@ public class GetExpectedWithdrawals extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final SafeFuture<Optional<ObjectAndMetaData<List<Withdrawal>>>> future =
         chainDataProvider.getExpectedWithdrawals(
             request.getPathParameter(PARAMETER_STATE_ID),

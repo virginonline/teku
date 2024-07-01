@@ -65,6 +65,7 @@ import tech.pegasys.teku.spec.datastructures.execution.versions.capella.Withdraw
 import tech.pegasys.teku.spec.datastructures.forkchoice.ProtoNodeData;
 import tech.pegasys.teku.spec.datastructures.forkchoice.ReadOnlyForkChoiceStrategy;
 import tech.pegasys.teku.spec.datastructures.lightclient.LightClientBootstrap;
+import tech.pegasys.teku.spec.datastructures.metadata.BlobSidecarsAndMetaData;
 import tech.pegasys.teku.spec.datastructures.metadata.BlockAndMetaData;
 import tech.pegasys.teku.spec.datastructures.metadata.ObjectAndMetaData;
 import tech.pegasys.teku.spec.datastructures.metadata.StateAndMetaData;
@@ -100,7 +101,7 @@ public class ChainDataProvider {
         combinedChainDataClient,
         new BlockSelectorFactory(spec, combinedChainDataClient),
         new StateSelectorFactory(spec, combinedChainDataClient),
-        new BlobSidecarSelectorFactory(combinedChainDataClient),
+        new BlobSidecarSelectorFactory(spec, combinedChainDataClient),
         rewardCalculator);
   }
 
@@ -124,7 +125,7 @@ public class ChainDataProvider {
   }
 
   public UInt64 getCurrentEpoch(
-      tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState state) {
+      final tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState state) {
     return spec.getCurrentEpoch(state);
   }
 
@@ -179,7 +180,7 @@ public class ChainDataProvider {
     return fromBlock(blockIdParam, Function.identity());
   }
 
-  public SafeFuture<Optional<List<BlobSidecar>>> getBlobSidecars(
+  public SafeFuture<Optional<BlobSidecarsAndMetaData>> getBlobSidecars(
       final String blockIdParam, final List<UInt64> indices) {
     return blobSidecarSelectorFactory
         .createSelectorForBlockId(blockIdParam)
@@ -188,7 +189,11 @@ public class ChainDataProvider {
 
   public SafeFuture<Optional<List<BlobSidecar>>> getAllBlobSidecarsAtSlot(
       final UInt64 slot, final List<UInt64> indices) {
-    return blobSidecarSelectorFactory.slotSelectorForAll(slot).getBlobSidecars(indices);
+    return blobSidecarSelectorFactory
+        .slotSelectorForAll(slot)
+        .getBlobSidecars(indices)
+        .thenApply(
+            maybeBlobSideCarsMetaData -> maybeBlobSideCarsMetaData.map(ObjectAndMetaData::getData));
   }
 
   public SafeFuture<Optional<ObjectAndMetaData<Bytes32>>> getBlockRoot(final String blockIdParam) {
@@ -676,7 +681,7 @@ public class ChainDataProvider {
   }
 
   public SafeFuture<Optional<ObjectAndMetaData<List<Withdrawal>>>> getExpectedWithdrawals(
-      String stateIdParam, Optional<UInt64> optionalProposalSlot) {
+      final String stateIdParam, final Optional<UInt64> optionalProposalSlot) {
     return stateSelectorFactory
         .createSelectorForStateId(stateIdParam)
         .getState()
@@ -697,8 +702,8 @@ public class ChainDataProvider {
   }
 
   List<Withdrawal> getExpectedWithdrawalsFromState(
-      tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState data,
-      Optional<UInt64> optionalProposalSlot) {
+      final tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState data,
+      final Optional<UInt64> optionalProposalSlot) {
     final UInt64 proposalSlot = optionalProposalSlot.orElse(data.getSlot().increment());
     // Apply some sanity checks prior to computing pre-state
     if (!spec.atSlot(proposalSlot).getMilestone().isGreaterThanOrEqualTo(SpecMilestone.CAPELLA)) {
@@ -727,7 +732,7 @@ public class ChainDataProvider {
       return spec.atSlot(proposalSlot)
           .getBlockProcessor()
           .getExpectedWithdrawals(preState)
-          .orElse(List.of());
+          .getWithdrawalList();
     } catch (SlotProcessingException | EpochProcessingException e) {
       LOG.debug("Failed to get expected withdrawals for slot {}", proposalSlot, e);
     }
@@ -760,5 +765,14 @@ public class ChainDataProvider {
         .createSelectorForStateId(stateIdParam)
         .getState()
         .thenApply(maybeStateData -> maybeStateData.map(blockData -> blockData.map(mapper)));
+  }
+
+  public SafeFuture<Optional<UInt64>> getFinalizedStateSlot(final UInt64 beforeSlot) {
+    return combinedChainDataClient
+        .getLatestAvailableFinalizedState(beforeSlot)
+        .thenApply(
+            maybeState ->
+                maybeState.map(
+                    tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState::getSlot));
   }
 }

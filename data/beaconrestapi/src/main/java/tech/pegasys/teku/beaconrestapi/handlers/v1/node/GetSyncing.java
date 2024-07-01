@@ -67,7 +67,7 @@ public class GetSyncing extends RestApiEndpoint {
       final ExecutionClientDataProvider executionClientDataProvider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getNodeSyncingStatus")
+            .operationId("getSyncingStatus")
             .summary("Get node syncing status")
             .description(
                 "Requests the beacon node to describe if it's currently syncing or not, "
@@ -80,7 +80,7 @@ public class GetSyncing extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     request.header(Header.CACHE_CONTROL, CACHE_NONE);
     request.respondOk(new SyncStatusData(syncProvider, executionClientDataProvider));
   }

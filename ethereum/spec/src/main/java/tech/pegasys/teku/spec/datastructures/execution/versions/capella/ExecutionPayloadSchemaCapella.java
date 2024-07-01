@@ -50,8 +50,12 @@ import tech.pegasys.teku.spec.datastructures.execution.ExecutionPayloadBuilder;
 import tech.pegasys.teku.spec.datastructures.execution.ExecutionPayloadSchema;
 import tech.pegasys.teku.spec.datastructures.execution.Transaction;
 import tech.pegasys.teku.spec.datastructures.execution.TransactionSchema;
-import tech.pegasys.teku.spec.datastructures.execution.versions.electra.DepositReceiptSchema;
-import tech.pegasys.teku.spec.datastructures.execution.versions.electra.ExecutionLayerExitSchema;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.ConsolidationRequest;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.ConsolidationRequestSchema;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.DepositRequest;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.DepositRequestSchema;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.WithdrawalRequest;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.WithdrawalRequestSchema;
 
 public class ExecutionPayloadSchemaCapella
     extends ContainerSchema15<
@@ -122,13 +126,36 @@ public class ExecutionPayloadSchemaCapella
   }
 
   @Override
-  public DepositReceiptSchema getDepositReceiptSchemaRequired() {
-    throw new IllegalStateException("Attempted to get a deposit receipt schema from capella");
+  public SszListSchema<DepositRequest, ? extends SszList<DepositRequest>>
+      getDepositRequestsSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a deposit requests schema from capella");
   }
 
   @Override
-  public ExecutionLayerExitSchema getExecutionLayerExitSchemaRequired() {
-    throw new IllegalStateException("Attempted to get a exit schema from bellatrix");
+  public DepositRequestSchema getDepositRequestSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a deposit request schema from capella");
+  }
+
+  @Override
+  public SszListSchema<WithdrawalRequest, ? extends SszList<WithdrawalRequest>>
+      getWithdrawalRequestsSchemaRequired() {
+    throw new IllegalStateException("Attempted to get withdrawal requests schema from capella");
+  }
+
+  @Override
+  public WithdrawalRequestSchema getWithdrawalRequestSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a withdrawal request schema from capella");
+  }
+
+  @Override
+  public ConsolidationRequestSchema getConsolidationRequestSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a consolidation request schema from capella");
+  }
+
+  @Override
+  public SszListSchema<ConsolidationRequest, ? extends SszList<ConsolidationRequest>>
+      getConsolidationRequestsSchemaRequired() {
+    throw new IllegalStateException("Attempted to get consolidation requests schema from capella");
   }
 
   public WithdrawalSchema getWithdrawalSchema() {
@@ -152,7 +179,7 @@ public class ExecutionPayloadSchemaCapella
   }
 
   @Override
-  public ExecutionPayloadCapellaImpl createFromBackingNode(TreeNode node) {
+  public ExecutionPayloadCapellaImpl createFromBackingNode(final TreeNode node) {
     return new ExecutionPayloadCapellaImpl(this, node);
   }
 

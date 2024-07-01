@@ -446,9 +446,7 @@ public class BlockManagerTest {
     }
 
     // Gossip all blocks except the first
-    blocks
-        .subList(1, blockCount)
-        .forEach(block -> blockManager.importBlock(block, BroadcastValidationLevel.NOT_REQUIRED));
+    blocks.subList(1, blockCount).forEach(block -> blockManager.importBlock(block));
     assertThat(pendingBlocks.size()).isEqualTo(blockCount - 1);
 
     // Import next block, causing remaining blocks to be imported
@@ -558,9 +556,7 @@ public class BlockManagerTest {
     }
 
     // Gossip all blocks except the first
-    blocks
-        .subList(1, blockCount)
-        .forEach(block -> blockManager.importBlock(block, BroadcastValidationLevel.NOT_REQUIRED));
+    blocks.subList(1, blockCount).forEach(block -> blockManager.importBlock(block));
     assertThat(pendingBlocks.size()).isEqualTo(blockCount - 1);
 
     // Import next block, causing next block to be queued for import
@@ -770,7 +766,8 @@ public class BlockManagerTest {
                 + TRANSACTION_COMMITTED_EVENT_LABEL
                 + " +0ms, "
                 + COMPLETED_EVENT_LABEL
-                + " +0ms");
+                + " +0ms",
+            "success");
   }
 
   @Test
@@ -1188,7 +1185,7 @@ public class BlockManagerTest {
   private SafeFutureAssert<BlockImportResult> assertThatBlockImport(final SignedBeaconBlock block) {
     return assertThatSafeFuture(
         blockManager
-            .importBlock(block, BroadcastValidationLevel.NOT_REQUIRED)
+            .importBlock(block)
             .thenCompose(BlockImportAndBroadcastValidationResults::blockImportResult));
   }
 
@@ -1201,7 +1198,7 @@ public class BlockManagerTest {
   private void safeJoinBlockImport(final SignedBeaconBlock block) {
     safeJoin(
         blockManager
-            .importBlock(block, BroadcastValidationLevel.NOT_REQUIRED)
+            .importBlock(block)
             .thenCompose(BlockImportAndBroadcastValidationResults::blockImportResult));
   }
 }

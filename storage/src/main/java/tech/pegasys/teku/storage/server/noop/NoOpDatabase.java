@@ -62,13 +62,10 @@ public class NoOpDatabase implements Database {
       final Optional<UInt64> maybeEarliestBlobSidecarSlot) {}
 
   @Override
-  public void storeFinalizedState(BeaconState state, Bytes32 blockRoot) {}
+  public void storeReconstructedFinalizedState(final BeaconState state, final Bytes32 blockRoot) {}
 
   @Override
-  public void storeReconstructedFinalizedState(BeaconState state, Bytes32 blockRoot) {}
-
-  @Override
-  public void updateWeakSubjectivityState(WeakSubjectivityUpdate weakSubjectivityUpdate) {}
+  public void updateWeakSubjectivityState(final WeakSubjectivityUpdate weakSubjectivityUpdate) {}
 
   @Override
   public Optional<OnDiskStoreData> createMemoryStore() {
@@ -225,10 +222,10 @@ public class NoOpDatabase implements Database {
   }
 
   @Override
-  public void setFinalizedDepositSnapshot(DepositTreeSnapshot finalizedDepositSnapshot) {}
+  public void setFinalizedDepositSnapshot(final DepositTreeSnapshot finalizedDepositSnapshot) {}
 
   @Override
-  public UInt64 pruneFinalizedBlocks(UInt64 lastSlotToPrune, int pruneLimit) {
+  public UInt64 pruneFinalizedBlocks(final UInt64 lastSlotToPrune, final int pruneLimit) {
     return lastSlotToPrune;
   }
 
@@ -239,7 +236,7 @@ public class NoOpDatabase implements Database {
   public void addDepositsFromBlockEvent(final DepositsFromBlockEvent event) {}
 
   @Override
-  public void removeDepositsFromBlockEvents(List<UInt64> blockNumbers) {}
+  public void removeDepositsFromBlockEvents(final List<UInt64> blockNumbers) {}
 
   @Override
   public void storeVotes(final Map<UInt64, VoteTracker> votes) {}
@@ -290,9 +287,6 @@ public class NoOpDatabase implements Database {
   public Optional<BlobSidecar> getNonCanonicalBlobSidecar(final SlotAndBlockRootAndBlobIndex key) {
     return Optional.empty();
   }
-
-  @Override
-  public void removeBlobSidecars(final SlotAndBlockRoot slotAndBlockRoot) {}
 
   @Override
   public Stream<SlotAndBlockRootAndBlobIndex> streamBlobSidecarKeys(

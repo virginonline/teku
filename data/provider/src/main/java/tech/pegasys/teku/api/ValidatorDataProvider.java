@@ -142,7 +142,7 @@ public class ValidatorDataProvider {
   }
 
   public SafeFuture<Optional<AttestationData>> createAttestationDataAtSlot(
-      UInt64 slot, int committeeIndex) {
+      final UInt64 slot, final int committeeIndex) {
     if (!isStoreAvailable()) {
       return SafeFuture.failedFuture(new ChainDataUnavailableException());
     }
@@ -159,7 +159,8 @@ public class ValidatorDataProvider {
             });
   }
 
-  public SafeFuture<List<SubmitDataError>> submitAttestations(List<Attestation> attestations) {
+  public SafeFuture<List<SubmitDataError>> submitAttestations(
+      final List<Attestation> attestations) {
     return validatorApiChannel.sendSignedAttestations(attestations);
   }
 
@@ -239,8 +240,10 @@ public class ValidatorDataProvider {
   }
 
   public SafeFuture<Optional<Attestation>> createAggregate(
-      final UInt64 slot, final Bytes32 attestationHashTreeRoot) {
-    return validatorApiChannel.createAggregate(slot, attestationHashTreeRoot);
+      final UInt64 slot,
+      final Bytes32 attestationHashTreeRoot,
+      final Optional<UInt64> committeeIndex) {
+    return validatorApiChannel.createAggregate(slot, attestationHashTreeRoot, committeeIndex);
   }
 
   public SafeFuture<List<SubmitDataError>> sendAggregateAndProofs(
@@ -326,7 +329,7 @@ public class ValidatorDataProvider {
   }
 
   private static ValidatorBlockResult generateSubmitSignedBlockResponse(
-      SendSignedBlockResult result) {
+      final SendSignedBlockResult result) {
     int responseCode;
     Optional<Bytes32> hashRoot = result.getBlockRoot();
     if (result.getRejectionReason().isEmpty()) {

@@ -81,7 +81,7 @@ public class GetNewBlockV3 extends RestApiEndpoint {
       final SchemaDefinitionCache schemaDefinitionCache) {
     return EndpointMetadata.get(ROUTE)
         .operationId("produceBlockV3")
-        .summary("Produce a new block, without signature")
+        .summary("Produce a new block, without signature.")
         .description(
             "Requests a beacon node to produce a valid block, which can then be signed by a validator. The\n"
                 + "returned block may be blinded or unblinded, depending on the current state of the network as\n"
@@ -95,7 +95,7 @@ public class GetNewBlockV3 extends RestApiEndpoint {
         .pathParam(SLOT_PARAMETER.withDescription(SLOT_PATH_DESCRIPTION))
         .queryParamRequired(RANDAO_PARAMETER)
         .queryParam(GRAFFITI_PARAMETER)
-        .queryParam(SKIP_RANDAO_VERIFICATION_PARAMETER)
+        .queryParamAllowsEmpty(SKIP_RANDAO_VERIFICATION_PARAMETER)
         .queryParam(BUILDER_BOOST_FACTOR_PARAMETER)
         .response(
             SC_OK,

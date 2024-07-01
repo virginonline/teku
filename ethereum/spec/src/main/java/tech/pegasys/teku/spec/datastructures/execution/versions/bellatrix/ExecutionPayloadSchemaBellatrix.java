@@ -51,8 +51,12 @@ import tech.pegasys.teku.spec.datastructures.execution.Transaction;
 import tech.pegasys.teku.spec.datastructures.execution.TransactionSchema;
 import tech.pegasys.teku.spec.datastructures.execution.versions.capella.Withdrawal;
 import tech.pegasys.teku.spec.datastructures.execution.versions.capella.WithdrawalSchema;
-import tech.pegasys.teku.spec.datastructures.execution.versions.electra.DepositReceiptSchema;
-import tech.pegasys.teku.spec.datastructures.execution.versions.electra.ExecutionLayerExitSchema;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.ConsolidationRequest;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.ConsolidationRequestSchema;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.DepositRequest;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.DepositRequestSchema;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.WithdrawalRequest;
+import tech.pegasys.teku.spec.datastructures.execution.versions.electra.WithdrawalRequestSchema;
 
 public class ExecutionPayloadSchemaBellatrix
     extends ContainerSchema14<
@@ -115,13 +119,38 @@ public class ExecutionPayloadSchemaBellatrix
   }
 
   @Override
-  public DepositReceiptSchema getDepositReceiptSchemaRequired() {
-    throw new IllegalStateException("Attempted to get a deposit receipt schema from bellatrix");
+  public SszListSchema<DepositRequest, ? extends SszList<DepositRequest>>
+      getDepositRequestsSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a deposit requests schema from bellatrix");
   }
 
   @Override
-  public ExecutionLayerExitSchema getExecutionLayerExitSchemaRequired() {
-    throw new IllegalStateException("Attempted to get a exit schema from bellatrix");
+  public DepositRequestSchema getDepositRequestSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a deposit request schema from bellatrix");
+  }
+
+  @Override
+  public SszListSchema<WithdrawalRequest, ? extends SszList<WithdrawalRequest>>
+      getWithdrawalRequestsSchemaRequired() {
+    throw new IllegalStateException("Attempted to get withdrawal requests schema from bellatrix");
+  }
+
+  @Override
+  public WithdrawalRequestSchema getWithdrawalRequestSchemaRequired() {
+    throw new IllegalStateException("Attempted to get a withdrawal request schema from bellatrix");
+  }
+
+  @Override
+  public SszListSchema<ConsolidationRequest, ? extends SszList<ConsolidationRequest>>
+      getConsolidationRequestsSchemaRequired() {
+    throw new IllegalStateException(
+        "Attempted to get consolidation requests schema from bellatrix");
+  }
+
+  @Override
+  public ConsolidationRequestSchema getConsolidationRequestSchemaRequired() {
+    throw new IllegalStateException(
+        "Attempted to get a consolidation request schema from bellatrix");
   }
 
   @Override
@@ -144,7 +173,7 @@ public class ExecutionPayloadSchemaBellatrix
   }
 
   @Override
-  public ExecutionPayloadBellatrix createFromBackingNode(TreeNode node) {
+  public ExecutionPayloadBellatrix createFromBackingNode(final TreeNode node) {
     return new ExecutionPayloadBellatrix(this, node);
   }
 

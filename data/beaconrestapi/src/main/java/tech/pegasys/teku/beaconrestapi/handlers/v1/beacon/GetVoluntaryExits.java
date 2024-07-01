@@ -51,8 +51,8 @@ public class GetVoluntaryExits extends RestApiEndpoint {
   GetVoluntaryExits(final NodeDataProvider provider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getVoluntaryExits")
-            .summary("Get signed voluntary exits")
+            .operationId("getPoolVoluntaryExits")
+            .summary("Get SignedVoluntaryExit from operations pool")
             .description(
                 "Retrieves voluntary exits known by the node but not necessarily incorporated into any block.")
             .tags(TAG_BEACON)
@@ -62,7 +62,7 @@ public class GetVoluntaryExits extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     request.header(Header.CACHE_CONTROL, CACHE_NONE);
     request.respondOk(nodeDataProvider.getVoluntaryExits());
   }

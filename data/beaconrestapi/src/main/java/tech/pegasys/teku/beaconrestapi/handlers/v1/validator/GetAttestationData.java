@@ -58,7 +58,7 @@ public class GetAttestationData extends RestApiEndpoint {
   public GetAttestationData(final ValidatorDataProvider provider) {
     super(
         EndpointMetadata.get(ROUTE)
-            .operationId("getAttestationData")
+            .operationId("produceAttestationData")
             .summary("Produce an AttestationData")
             .description("Requests that the beacon node produce an AttestationData.")
             .tags(TAG_VALIDATOR, TAG_VALIDATOR_REQUIRED)
@@ -74,7 +74,7 @@ public class GetAttestationData extends RestApiEndpoint {
   }
 
   @Override
-  public void handleRequest(RestApiRequest request) throws JsonProcessingException {
+  public void handleRequest(final RestApiRequest request) throws JsonProcessingException {
     final UInt64 slot = request.getQueryParameter(SLOT_PARAM);
     final UInt64 committeeIndex = request.getQueryParameter(COMMITTEE_INDEX_PARAMETER);
     if (committeeIndex.isLessThan(0)) {

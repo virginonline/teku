@@ -27,7 +27,7 @@ import tech.pegasys.teku.validator.remote.sentry.SentryNodesConfigLoader;
 public class ValidatorClientOptions {
 
   @ArgGroup(multiplicity = "0..1")
-  private ExclusiveParams exclusiveParams = new ExclusiveParams();
+  private final ExclusiveParams exclusiveParams = new ExclusiveParams();
 
   @Option(
       names = {"--Xfailovers-send-subnet-subscriptions-enabled"},
@@ -86,7 +86,7 @@ public class ValidatorClientOptions {
   private boolean obolDvtSelectionsEndpointEnabled =
       ValidatorConfig.DEFAULT_OBOL_DVT_SELECTIONS_ENDPOINT_ENABLED;
 
-  public void configure(TekuConfiguration.Builder builder) {
+  public void configure(final TekuConfiguration.Builder builder) {
     configureBeaconNodeApiEndpoints();
 
     builder.validator(

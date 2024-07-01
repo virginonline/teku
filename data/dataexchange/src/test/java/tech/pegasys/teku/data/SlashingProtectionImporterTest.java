@@ -77,7 +77,7 @@ public class SlashingProtectionImporterTest {
   }
 
   @Test
-  public void shouldImportSingleRecord(@TempDir Path tempDir)
+  public void shouldImportSingleRecord(@TempDir final Path tempDir)
       throws URISyntaxException, IOException {
     final File ruleFile = usingResourceFile("slashProtection.yml", tempDir);
     final SlashingProtectionImporter importer = new SlashingProtectionImporter(tempDir);
@@ -88,7 +88,7 @@ public class SlashingProtectionImporterTest {
   }
 
   @Test
-  public void shouldExportAndImportFile(@TempDir Path tempDir)
+  public void shouldExportAndImportFile(@TempDir final Path tempDir)
       throws IOException, URISyntaxException {
     final Path exportedFile = tempDir.resolve("exportedFile.json").toAbsolutePath();
 
@@ -115,7 +115,7 @@ public class SlashingProtectionImporterTest {
   }
 
   @Test
-  void shouldImportFileOverRepairedRecords(@TempDir Path tempDir) throws Exception {
+  void shouldImportFileOverRepairedRecords(@TempDir final Path tempDir) throws Exception {
     final SubCommandLogger logger = mock(SubCommandLogger.class);
     final Path initialRecords = tempDir.resolve("initial");
     final Path repairedRecords = tempDir.resolve("repaired");
@@ -163,6 +163,31 @@ public class SlashingProtectionImporterTest {
                 repairedEpoch));
   }
 
+  @Test
+  void shouldFailImportingIfValidatorExistingRecordHasDifferentGenesisValidatorsRoot(
+      @TempDir final Path tempDir) throws URISyntaxException, IOException {
+    final SlashingProtectionImporter importer = new SlashingProtectionImporter(tempDir);
+
+    final File slashProtection = getResourceFile("format2_minimal.json");
+
+    importer.initialise(slashProtection);
+
+    Map<BLSPublicKey, String> errors = importer.updateLocalRecords(__ -> {});
+
+    assertThat(errors).isEmpty();
+
+    final File slashProtectionWithDifferentGvr =
+        getResourceFile("format2_minimal_different_genesis_validators_root.json");
+
+    importer.initialise(slashProtectionWithDifferentGvr);
+
+    errors = importer.updateLocalRecords(__ -> {});
+
+    assertThat(errors)
+        .hasSize(1)
+        .containsEntry(publicKey, "Genesis validators root did not match what was expected.");
+  }
+
   private ValidatorSigningRecord loadSigningRecord(final File repairedRuleFile) throws IOException {
     return ValidatorSigningRecord.fromBytes(
         Bytes.wrap(Files.readAllBytes(repairedRuleFile.toPath())));
@@ -182,9 +207,11 @@ public class SlashingProtectionImporterTest {
       throws URISyntaxException, IOException {
     final Path tempFile = tempDir.resolve(pubkey + ".yml").toAbsolutePath();
     Files.copy(
-        new File(Resources.getResource(resourceFileName).toURI()).toPath(),
-        tempFile,
-        StandardCopyOption.REPLACE_EXISTING);
+        getResourceFile(resourceFileName).toPath(), tempFile, StandardCopyOption.REPLACE_EXISTING);
     return tempFile.toFile();
+  }
+
+  private File getResourceFile(final String resourceFileName) throws URISyntaxException {
+    return new File(Resources.getResource(resourceFileName).toURI());
   }
 }

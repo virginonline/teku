@@ -98,7 +98,7 @@ public class MultiThreadedStoreTest {
     }
   }
 
-  private Runnable createStoreTaskForSlot(long slotNumber) {
+  private Runnable createStoreTaskForSlot(final long slotNumber) {
     return () -> {
       final StoreTransaction transaction = recentChainData.startStoreTransaction();
       final SignedBlockAndState block = chainBuilder.generateBlockAtSlot(slotNumber);
@@ -117,6 +117,7 @@ public class MultiThreadedStoreTest {
         .dataDir(tempDir.toPath())
         .version(DatabaseVersion.LEVELDB2)
         .storageMode(storageMode)
+        .stateRebuildTimeoutSeconds(12)
         .stateStorageFrequency(1L)
         .storeConfig(storeConfig)
         .storeNonCanonicalBlocks(storeNonCanonicalBlocks)

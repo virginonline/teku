@@ -16,19 +16,19 @@ package tech.pegasys.teku.infrastructure.ssz.primitive;
 import tech.pegasys.teku.infrastructure.ssz.impl.AbstractSszPrimitive;
 import tech.pegasys.teku.infrastructure.ssz.schema.SszPrimitiveSchemas;
 
-public class SszByte extends AbstractSszPrimitive<Byte, SszByte> {
+public class SszByte extends AbstractSszPrimitive<Byte> {
 
   public static final SszByte ZERO = SszByte.of(0);
 
-  public static SszByte of(int value) {
+  public static SszByte of(final int value) {
     return new SszByte((byte) value);
   }
 
-  public static SszByte of(byte value) {
+  public static SszByte of(final byte value) {
     return new SszByte(value);
   }
 
-  private SszByte(Byte value) {
+  private SszByte(final Byte value) {
     super(value, SszPrimitiveSchemas.BYTE_SCHEMA);
   }
 }
