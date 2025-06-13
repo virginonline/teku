@@ -981,10 +981,15 @@ public class Spec {
 
     // query the blob_schedule after FULU
     if (highestSupportedMilestone.isGreaterThanOrEqualTo(FULU)) {
-      return forMilestone(FULU)
-          .miscHelpers()
-          .toVersionFulu()
-          .map(MiscHelpersFulu::getHighestMaxBlobsPerBlockFromSchedule);
+      final Optional<Integer> maybeHighestMaxBlobsPerBlockFromSchedule =
+          forMilestone(FULU)
+              .miscHelpers()
+              .toVersionFulu()
+              .flatMap(MiscHelpersFulu::getHighestMaxBlobsPerBlockFromSchedule);
+      // only use blob_schedule if it is present
+      if (maybeHighestMaxBlobsPerBlockFromSchedule.isPresent()) {
+        return maybeHighestMaxBlobsPerBlockFromSchedule;
+      }
     }
 
     final Optional<Integer> maybeHighestMaxBlobsPerBlock =
@@ -1127,7 +1132,9 @@ public class Spec {
       default -> {
         final UInt64 epoch = atSlot(slot).miscHelpers().computeEpochAtSlot(slot);
         return Optional.of(
-            specVersion.miscHelpers().toVersionFulu().orElseThrow().getMaxBlobsPerBlock(epoch));
+            MiscHelpersFulu.required(specVersion.miscHelpers())
+                .getBlobParameters(epoch)
+                .maxBlobsPerBlock());
       }
     }
   }

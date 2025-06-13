@@ -361,7 +361,7 @@ public class MiscHelpers {
     return Bytes32.wrap(Bytes.concatenate(domainType.getWrappedBytes(), forkDataRoot.slice(0, 28)));
   }
 
-  private Bytes32 computeForkDataRoot(
+  protected Bytes32 computeForkDataRoot(
       final Bytes4 currentVersion, final Bytes32 genesisValidatorsRoot) {
     return new ForkData(currentVersion, genesisValidatorsRoot).hashTreeRoot();
   }
@@ -444,6 +444,14 @@ public class MiscHelpers {
 
   public int getBlobKzgCommitmentsCount(final SignedBeaconBlock signedBeaconBlock) {
     throw new UnsupportedOperationException("No Blob KZG Commitments before Deneb");
+  }
+
+  public List<Integer> computeProposerIndices(
+      final BeaconState state,
+      final UInt64 epoch,
+      final Bytes32 epochSeed,
+      final IntList activeValidatorIndices) {
+    throw new UnsupportedOperationException("No ProposerLookahead before Fulu");
   }
 
   public UInt64 getMaxEffectiveBalance(final Validator validator) {

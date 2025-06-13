@@ -15,8 +15,11 @@ package tech.pegasys.teku.spec.logic.versions.fulu.helpers;
 
 import static tech.pegasys.teku.spec.logic.common.helpers.MathHelpers.bytesToUInt64;
 import static tech.pegasys.teku.spec.logic.common.helpers.MathHelpers.uint256ToBytes;
+import static tech.pegasys.teku.spec.logic.common.helpers.MathHelpers.uint64ToBytes;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.Bytes;
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
@@ -31,6 +34,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import tech.pegasys.teku.infrastructure.bytes.Bytes4;
 import tech.pegasys.teku.infrastructure.crypto.Hash;
 import tech.pegasys.teku.infrastructure.ssz.SszList;
 import tech.pegasys.teku.infrastructure.ssz.schema.SszListSchema;
@@ -61,6 +65,7 @@ import tech.pegasys.teku.spec.datastructures.blocks.blockbody.versions.electra.B
 import tech.pegasys.teku.spec.datastructures.execution.BlobAndCellProofs;
 import tech.pegasys.teku.spec.datastructures.state.Validator;
 import tech.pegasys.teku.spec.datastructures.state.beaconstate.BeaconState;
+import tech.pegasys.teku.spec.datastructures.state.beaconstate.versions.electra.BeaconStateElectra;
 import tech.pegasys.teku.spec.datastructures.type.SszKZGCommitment;
 import tech.pegasys.teku.spec.datastructures.type.SszKZGProof;
 import tech.pegasys.teku.spec.logic.common.helpers.MiscHelpers;
@@ -116,22 +121,49 @@ public class MiscHelpersFulu extends MiscHelpersElectra {
     return Optional.of(this);
   }
 
-  // get_max_blobs_per_block
-  public int getMaxBlobsPerBlock(final UInt64 epoch) {
-    final Optional<BlobScheduleEntry> maybeSchedule =
-        blobSchedule.stream()
-            .filter(blobSchedule -> blobSchedule.epoch().isLessThanOrEqualTo(epoch))
-            .max(Comparator.comparing(BlobScheduleEntry::epoch));
-    return maybeSchedule
-        .map(BlobScheduleEntry::maxBlobsPerBlock)
-        .orElseGet(specConfigFulu::getMaxBlobsPerBlock);
+  // compute_fork_version
+  public Bytes4 computeForkVersion(final UInt64 epoch) {
+    if (epoch.isGreaterThanOrEqualTo(specConfigFulu.getFuluForkEpoch())) {
+      return specConfigFulu.getFuluForkVersion();
+    } else if (epoch.isGreaterThanOrEqualTo(specConfigFulu.getElectraForkEpoch())) {
+      return specConfigFulu.getElectraForkVersion();
+    } else if (epoch.isGreaterThanOrEqualTo(specConfigFulu.getDenebForkEpoch())) {
+      return specConfigFulu.getDenebForkVersion();
+    } else if (epoch.isGreaterThanOrEqualTo(specConfigFulu.getCapellaForkEpoch())) {
+      return specConfigFulu.getCapellaForkVersion();
+    } else if (epoch.isGreaterThanOrEqualTo(specConfigFulu.getBellatrixForkEpoch())) {
+      return specConfigFulu.getBellatrixForkVersion();
+    } else if (epoch.isGreaterThanOrEqualTo(specConfigFulu.getAltairForkEpoch())) {
+      return specConfigFulu.getAltairForkVersion();
+    }
+    return specConfigFulu.getGenesisForkVersion();
   }
 
-  public int getHighestMaxBlobsPerBlockFromSchedule() {
+  // compute_fork_digest
+  public Bytes4 computeForkDigest(final Bytes32 genesisValidatorsRoot, final UInt64 epoch) {
+    final Bytes4 forkVersion = computeForkVersion(epoch);
+    final BlobParameters blobParameters = getBlobParameters(epoch);
+    final Bytes32 baseDigest = computeForkDataRoot(forkVersion, genesisValidatorsRoot);
+    // Bitmask digest with hash of blob parameters
+    return new Bytes4(baseDigest.xor(blobParameters.hash()).slice(0, 4));
+  }
+
+  public Optional<Integer> getHighestMaxBlobsPerBlockFromSchedule() {
     return blobSchedule.stream()
         .max(Comparator.comparing(BlobScheduleEntry::maxBlobsPerBlock))
-        .map(BlobScheduleEntry::maxBlobsPerBlock)
-        .orElseGet(specConfigFulu::getMaxBlobsPerBlock);
+        .map(BlobScheduleEntry::maxBlobsPerBlock);
+  }
+
+  // get_blob_parameters
+  public BlobParameters getBlobParameters(final UInt64 epoch) {
+    return blobSchedule.stream()
+        .sorted(Comparator.comparing(BlobScheduleEntry::epoch).reversed())
+        .filter(entry -> epoch.isGreaterThanOrEqualTo(entry.epoch()))
+        .findFirst()
+        .map(BlobParameters::fromBlobScheduleEntry)
+        .orElse(
+            new BlobParameters(
+                specConfigFulu.getElectraForkEpoch(), specConfigFulu.getMaxBlobsPerBlock()));
   }
 
   private UInt256 incrementByModule(final UInt256 n) {
@@ -602,5 +634,38 @@ public class MiscHelpersFulu extends MiscHelpersElectra {
     return currentEpoch
         .minusMinZero(epoch)
         .isLessThanOrEqualTo(specConfigFulu.getMinEpochsForDataColumnSidecarsRequests());
+  }
+
+  // compute_proposer_indices
+  @Override
+  public List<Integer> computeProposerIndices(
+      final BeaconState state,
+      final UInt64 epoch,
+      final Bytes32 epochSeed,
+      final IntList activeValidatorIndices) {
+    final UInt64 startSlot = computeStartSlotAtEpoch(epoch);
+    return IntStream.range(0, specConfigFulu.getSlotsPerEpoch())
+        .mapToObj(
+            i -> {
+              final Bytes32 seed =
+                  Hash.sha256(
+                      Bytes.concat(
+                          epochSeed.toArray(), uint64ToBytes(startSlot.plus(i)).toArray()));
+              return computeProposerIndex(state, activeValidatorIndices, seed);
+            })
+        .toList();
+  }
+
+  // initialize_proposer_lookahead
+  public List<UInt64> initializeProposerLookahead(
+      final BeaconStateElectra state, final BeaconStateAccessorsFulu beaconAccessors) {
+    final UInt64 currentEpoch = computeEpochAtSlot(state.getSlot());
+    return IntStream.rangeClosed(0, specConfigFulu.getMinSeedLookahead())
+        .flatMap(
+            i ->
+                beaconAccessors.getBeaconProposerIndices(state, currentEpoch.plus(i)).stream()
+                    .mapToInt(Integer::intValue))
+        .mapToObj(UInt64::valueOf)
+        .toList();
   }
 }
